@@ -1,0 +1,772 @@
+*{
+    padding: 0;
+    margin: 0;
+}
+body{
+    width: 780px;
+    height: 500px;
+    border-radius: 2rem;
+}
+.main{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    background-color: bisque;
+}
+.innerMain{
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+}
+header{
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    padding: 21px 0px 0px 0px;;
+    background-color: #caf0f8;
+    height: 30px;
+    align-items: center;
+}
+header div.outerHeader{
+    padding: 10px 10px 22px 10px;
+}
+header div.inlineHeader{
+    background-color: bisque;
+}
+header div.inlineHeader.permissions{
+    background-color: lightgrey;
+}
+header span{
+    font-family: sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+    background-color: #caf0f8;
+    color: #03045e;
+    padding: 1vmin;
+    border-radius: 2px;
+    border: 1px solid #03045e;
+}
+header span:hover{
+    background-color: #335c67;
+    color: aliceblue;
+    opacity: 50%;
+}
+.active{
+    background-color: #335c67;
+    color: aliceblue;
+}
+div.pages{
+    /* display: inherit; */
+    
+    overflow-y: auto;
+    min-height: 100%;
+    min-height: 100%;
+}
+.buttonArea{
+    display: flex;
+    align-items: center;
+    /**inline width 93%**/
+}
+button.reportButtons{
+    color: whitesmoke;
+    font-weight: bolder;
+    padding: 0 3px 0 3px;
+    height: 2rem;
+    border-radius: 5px;
+    border: none;
+    
+    cursor: pointer;
+}
+div.loginData button.reportButtons{
+    margin: 3.5px;
+}
+input.reportButtons{
+    height: 2rem;
+    border-radius: 5px;
+    border: none;
+    margin: 3.5px;
+    padding: 0 3px 0 8px;
+    width: 100%;
+}
+button.downloadLoginData{
+    background-color: #2a9d8f;
+}
+button.downloadLoginData img{
+    height: 10px;
+}
+button.generateReport{
+    background-color: #264653;
+    min-width: fit-content;
+    
+}
+button.fmFormat{
+    background-color: lightslategray;
+    min-height: fit-content;
+}
+button.saveLoginData{
+    background-color: #80ed99;
+    padding: 0 10px 0 10px;
+}
+.fontAwesomeBtns{
+    font-size: 1.3rem;
+    padding: 2px 3px 2px 3px;
+}
+.qrScansDisplay{
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    position: fixed;
+    right: 5px;
+    border: solid;
+    border-radius: 5px;
+    padding: 4px;
+    font-size: 15px;
+    background: whitesmoke;
+    color: #2c6e49;
+    font-family: cursive;
+    font-weight: 900;
+}
+.qrScansDisplay i{
+    font-size: 1.6rem;
+    color: cornflowerblue;
+}
+.date.before{
+    height: 1.5rem;
+}
+button:hover{
+    opacity: 60%;
+}
+.loginData{
+    width: 100%;
+}
+.dateInputs{
+    display: flex;
+    flex-direction: column;
+    /* gap: 2px; */
+    
+}
+.dateInputs div{
+    display: flex;
+    margin: 1.5px;
+}
+.dateInputs div label{
+    width: 30px;
+    padding: 5px;
+    font-size: 12px;
+}
+input[type ="date"]{
+    border: none;
+    border-radius: 3px;
+}
+#permissionsPage{
+    display: none;
+}
+table{
+    border: 1px solid black;
+    overflow-y: auto;
+}
+div#loginData table{
+    /* display: none; */
+    min-width: 100%;
+}
+div#home #innerHome{
+    display: flex;
+}
+div#home .section{
+    margin: 6px;
+    height: 360px;
+    padding: 6px;
+    background-color: beige;
+    border-radius: 10px;
+}
+div#home div.fosDetails{
+    width: 43%;
+}
+div#extensionDetails{
+    background-color: lightslategray;
+    width: 50%;
+    text-align: center;
+}
+div#extensionDetails div.extensionDetails{
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+    font-family: cursive;
+    align-items: flex-start;
+    margin-left: 10px;
+    width: 100%;
+    gap: 5px;
+}
+div.extensionDetails-details{
+    display: flex;
+    text-align: left;
+}
+div.extensionDetails-details span.key{
+    width: 120px;
+}
+div.extensionDetails-details span.pair{
+    width: 200px;
+    margin-left: 10px;
+}
+
+div#home table{
+    width: fit-content;
+}
+tr#fosDetails-table-head{
+    background-color: burlywood;
+}
+tr{
+    background-color: aliceblue;
+    padding: 1px 1px 1px 1px;
+    width: 100%;
+    gap: 2vmin;
+}
+tr.table-heading{
+    position: sticky;
+    background-color: burlywood;
+}
+th{
+    padding: 1px;
+    
+}
+td{
+    font-size: 10px;
+    background-color: aliceblue;
+    border: none;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    color: #000000;
+    padding: 2px 0px 2px 2px;
+    /* white-space: wrap; */
+    text-align: center;
+}
+
+form div{
+    font-size: medium;
+    margin: 0.5rem;
+    color: #5f0f40;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+div#permissions{
+    height: 100%;
+}
+.dateColumn{
+    min-width: 55px;
+    cursor: pointer;
+}
+/* From Uiverse.io by adamgiebl */ 
+.card {
+    border-radius: 10px;
+    background: lightgrey;
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 30px 50px -12px inset, rgba(0, 0, 0, 0.3) 0px 18px 26px -18px inset;
+  }
+div#permissions div.permissions{
+    display: flex;
+    height: 850px;
+    width: 100%;
+    user-select: none;
+}
+span.serialNo{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #000000;
+    background-color: lightgrey;
+    border-radius: 50%;
+    height: 30px;
+    width: 30px;
+    text-align: center;
+    margin-left: 1.2rem;
+    box-shadow: 3px 3px 5px #c5c5c5,
+              -3px -3px 5px #ffffff;
+    font-family: monospace;
+    font-size: 0.9rem;
+}
+@keyframes slideRight{
+    50%{
+        transform: translateX(250x);
+    }
+    100%{
+        transform: translateX(250px) rotate(50%);
+    }
+}
+span.innerArrows.arrowAfterClick{
+    animation: slideRight 0.5s forwards;
+    transition: ease-in 0.5s;
+}
+span.innerArrows{
+    margin-left: 0.5rem;
+    border-radius: 25%;
+    height: 20px;
+    align-self: center;
+    font-weight: bold;
+    cursor: pointer;
+}
+span.innerArrows:hover{
+    transform: scale(1.1);
+}
+span.innerArrows.secondArrow{
+    padding: 1px;
+    width: 70px;
+    border-radius: 7px;
+    color: darkred;
+}
+.TDeditable{
+    cursor: cell;
+    scale: 1.01;
+    border: 1px solid black;
+    border-radius: 2px;
+    font-size: 0.8rem;
+}
+.TDnonEditable{
+    opacity: 50%;
+}
+td input{
+    width: 100%;
+    height: 30px;
+    font-size: 10px;
+    background-color: aliceblue;
+    border: none;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    color: #000000;
+    /* padding: 2px 0px 2px 2px; */
+    overflow: hidden;
+    /* white-space: wrap; */
+    text-align: center;
+    font-size: 0.8rem;
+}
+td input:focus{
+    border: none;
+    outline: none;
+}
+td.table-sno{
+    cursor: pointer;
+}
+td.table-sno input[type='checkbox']{
+    width: 20px;
+    height: 20px;
+}
+span#qrScansCount{
+    font-weight: 900;
+    color: whitesmoke;
+    /* background: brown; */
+    font-size: 1.1rem;
+}
+.permissions-toggle{
+    display: flex;
+    align-items: center;
+}
+div.flex{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.5rem;
+    width: 1.5rem;
+    border-radius: 50%;
+    background-color: brown;
+    padding: 3px;
+}
+label.labels{
+    font-size: 1.1rem;
+    margin-left: 1rem;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 540;
+    width: 12rem;
+}
+label.innerLabels{
+    font-size: 1rem;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 600;
+}
+label.innerLabels.cmds{
+    width: 100px;
+    color: indigo;
+    font-weight: 900;
+}
+/* From Uiverse.io by chase2k25 */ 
+/* Switch Container */
+.switch-container {
+    position: relative;
+    width: 75px;
+    height: 35px;
+    background: #d6d6d6;
+    border-radius: 50px;
+    box-shadow:
+      inset -8px -8px 16px #ffffff,
+      inset 8px 8px 16px #b0b0b0;
+  }
+  
+  /* Hidden Checkbox */
+  .toggle-checkbox {
+    display: none;
+  }
+  
+  /* Switch Label (Interactive Area) */
+  .switch {
+    position: absolute;
+    top: 35%;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: translateY(-50%);
+    border-radius: 5px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  
+  /* Toggle Button */
+  .toggle {
+    position: absolute;
+    width: 40px;
+    height: 25px;
+    background: linear-gradient(145deg, #d9d9d9, #bfbfbf);
+    border-radius: 25px;
+    top: 2.5px;
+    left: 0.5px;
+    box-shadow:
+      -2px -2px 4px #ffffff,
+      2px 2px 4px #b0b0b0;
+    transition: all 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 0.5px;
+  }
+  
+  /* LED Light */
+  .led {
+    width: 5px;
+    height: 5px;
+    background: grey;
+    border-radius: 50%;
+    box-shadow: 0 0 10px 2px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease-in-out;
+  }
+  
+  /* Active State for Toggle (ON) */
+  .toggle-checkbox:checked + .switch .toggle {
+    left: 18px;
+    background: linear-gradient(145deg, #cfcfcf, #a9a9a9);
+    box-shadow:
+      -2px -2px 4px #ffffff,
+      2px 2px 8px #8a8a8a;
+  }
+  
+  .toggle-checkbox:checked + .switch .led {
+    background: yellow;
+    box-shadow: 0 0 7.5px 2px yellow;
+  }
+  
+  /* Hover Effect */
+  .switch:hover .toggle {
+    box-shadow:
+      -2px -2px 6px #ffffff,
+      2px 2px 6px #9b9b9b;
+  }
+.childParameters{
+    display: flex;
+    transition: all 0.3s ease-in-out;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+    
+}
+
+div.radioBox input{
+    display: none;
+}
+div.radioBox{
+    padding: 0px 5px 0px 5px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 30px;
+    width: 259px;
+    box-shadow:
+      -2px -2px 4px #ffffff,
+      2px 2px 4px #b0b0b0;
+    border-radius: 10px;
+}
+div.autoRefreshParameters{
+    height: 38px;
+    width: 40px;
+}
+div.radioBox label{
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-size: 12px;
+    height: 25px;
+    min-width: 25px;    
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+div.radioBox label:has(input:checked){
+    font-size: 15px;
+    background-color: whitesmoke;
+    padding: 2px 4px;
+    transition: ease-in-out 100ms;
+}
+#dropdownOuter{
+    position: relative;
+}
+/* .dropdownContainer{
+    padding: 0px 5px 0px 15px;
+    width: 80px;
+    box-shadow: -2px -2px 4px #ffffff, 2px 2px 4px #b0b0b0;
+    border-radius: 4px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-size: 12px;
+    color: blue;
+    cursor: pointer;
+} */
+div#dropdownContainer{
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    height: 35px;
+    padding: 0px 5px 0px 15px;
+    width: 80px;
+    box-shadow: -2px -2px 4px #ffffff, 2px 2px 4px #b0b0b0;
+    border-radius: 4px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-size: 12px;
+    color: blue;
+    cursor: pointer;
+    position : absolute;
+    
+}
+ul#dropDownMenu{
+    display: none;
+    flex-direction: column;
+    /* transform: translateX(40px); */
+    list-style: none;
+    gap: 10px;
+    height: max-content;
+}
+i#dropdownAngle{
+    position: absolute;
+    right: 8px;
+    z-index: 10;
+    top: 13px;
+}
+div.dropdownActive#dropdownContainer{
+    height: 170px;
+    transform: translate(0px, 40%);
+}
+div.dropdownActive ul#dropDownMenu{
+    display: flex;
+    padding-left: 0px;
+}
+div.dropdownActive span.dropdownText{
+    display: none;
+}
+div.dropdownActive i#dropdownAngle{
+    transform: rotate(180deg);
+}
+div#oftenDay{
+    width: 45px;
+    height: 35px;
+    background-color: lightgrey;
+    box-shadow: -2px -2px 4px #ffffff, 2px 2px 4px #b0b0b0;
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: larger;
+    font-family: fantasy;
+}
+div#dayPicker{
+    position: relative;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+}
+div.calender{
+    padding: 1px 0px;
+    position: absolute;
+    height: 120px;
+    width: 160px;
+    /* border: 1px solid black; */
+    transform: translate(-3%, 30%);
+    DISPLAY: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 10px;
+    background-color: darkgray;
+    justify-content: center;
+}
+div.calender span{
+    color: crimson;
+    border-radius: 25%;
+    height: 20px;
+    width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* box-sizing: border-box; */
+    /* width: calc(100% / 7); */
+    cursor: pointer;
+    background-color: lightgray;
+}
+div.calender span:hover{
+    scale: 1.2;
+}
+/* div#dropdownContainer:hover{
+    height: 170px;
+    transform: translate(0px, 40%);
+}
+div#dropdownContainer:hover > ul#dropDownMenu{
+    display: flex;
+    padding-left: 0px;
+}
+div#dropdownContainer:hover > span.dropdownText{
+    display: none;
+}
+div#dropdownContainer:hover > i#dropdownAngle{
+    transform: rotate(180deg);
+} */
+li:hover{
+    scale:1.1;
+}
+
+span.childParameters div.switch-container {
+    width: 56px;
+    height: 26px;
+    border-radius: 37px;
+    box-shadow:
+      inset -6px -6px 12px #ffffff,
+      inset 6px 6px 12px #b0b0b0;
+  }
+  span.childParameters .switch {
+    top: 35%;
+    transform: translateY(-50%);
+    border-radius: 5px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  span.childParameters .toggle {
+    width: 30px;
+    height: 19px;
+    border-radius: 19px;
+    top: 0px;
+    left: 0px;
+    box-shadow:
+      -2px -2px 4px #ffffff,
+      2px 2px 4px #b0b0b0;
+    padding-left: 0.5px;
+  }
+  span.childParameters .toggle-checkbox:checked + .switch .toggle {
+    left: 12px;
+    box-shadow:
+      -2px -2px 4px #ffffff,
+      2px 2px 8px #8a8a8a;
+  }
+input.permissions-custom-input{
+    border-radius: 5px;
+    width: 170px;
+    border: none;
+    height: 30px;
+    box-shadow: inset 2px 2px 2px black;
+    background-color: #ccc;
+    color: white;
+    padding: 1px 2px 1px 5px;
+    font-weight: 700;
+}
+input#invoiceNumber-input{
+    color: black;
+    font-family: 'math';
+    margin-left: 1rem;
+    letter-spacing: 0.06;
+}
+div.fosDetails-table{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    max-width: fit-content;
+    margin: 3px 0px 2px 2px;
+}
+tr.fosDetails-body td{
+    padding: 2px 6px 2px 6px;
+}
+tr#fosDetails-table-head th{
+    padding: 2px 5px 2px 5px;
+}
+div.fosDetails-table p{
+    text-align: center;
+    align-self: center;
+}
+div.fosDetails-table .tableButtons{
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1px;
+    width: 100%;
+    gap: 7px;
+    margin: 3px;
+}
+
+div#home button{
+    padding: 2px 8px 2px 8px;
+    border: none;
+    box-shadow: -1px -1px 2px #ffffff, 1px 1px 4px #8a8a8a;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    height: 1.4rem;
+    align-items: center;
+
+}
+div#home button#save{
+    padding: 2px 8px 2px 8px;
+    position: relative;
+}
+span#arrowTosave{
+    padding: 1px 3px 1px 3px;
+    background-color: lightseagreen;
+    color: whitesmoke;
+}
+div#backupData{
+    position: fixed;
+    bottom: 2px;
+    right: 2px;
+    display: flex;
+}
+div.backupData{
+    
+    display: flex;
+    flex-direction: row;
+    right: 0px;
+    border: 1px solid black;
+    border-radius: 5px;
+    background-color: azure;
+    height: 2rem;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0px 5px 3px 0px;
+}
+div#backupData button#backup{
+    color: blue;
+}
+div#backupData button#restoreBackup{
+    color: darkmagenta;
+}
+div#backupData input#backupFile{
+    background-color: lightgray;
+    padding: 5px;
+    border-radius: 6px;
+    width: 200px;
+}
+.displayNone{
+    display: none !important;
+}
+

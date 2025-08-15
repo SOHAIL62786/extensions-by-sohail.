@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="message.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvg@3.0.7/lib/umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+</head>
+<body>
+    <div class="contentJS-canvas">
+        <canvas id="qr-canvas" width="300" height="300">
+            
+        </canvas>
+    </div>
+    <div class="contentJS-messageContainer">
+        <span class="contentJS-close">❌</span>
+        <br>
+        <div class="contentJS-innermessageContainer">
+            <!-- <span class="contentJS-message">sohail bhai assalamualaikum</span> -->
+        </div>
+    </div>
+    <div id="content-commandWall">
+        <div class="contentJS-leftButtons contentJS-buttonsDiv">
+            <button class="contentJS-buttons" id="SQ">Submit For QC 
+                <span class="contentJS-buttons-number">11</span>
+            </button>
+            <button class="contentJS-buttons" id="WO">Wallet Linking => others 
+                <span class="contentJS-buttons-number">12</span>
+            </button>
+            <button class="contentJS-buttons" id="WN">Wallet Linking => None 
+                <span class="contentJS-buttons-number">13</span>
+            </button>
+            <button class="contentJS-buttons" id="KP">Kyc Poi Number 
+                <span class="contentJS-buttons-number">14</span>
+            </button>
+            <button class="contentJS-buttons" id="VA">Validate Agreement 
+                <span class="contentJS-buttons-number">15</span>
+            </button>
+        </div>
+
+        <input type="text" id="content-commandInput">
+
+        <div class="contentJS-rightButtons contentJS-buttonsDiv">
+            <button class="contentJS-buttons" id="IN">Invoice Number 
+                <span class="contentJS-buttons-number">19</span>
+            </button>
+            <button class="contentJS-buttons" id="NTBS"> 
+                <strong>NTB.S</strong>
+                ubmit -> WL VA SQ
+                <span class="contentJS-buttons-number">10</span>
+            </button>
+            <button class="contentJS-buttons" id="ETBS">
+                <strong>ETB.S</strong>
+                ubmit -> KP VA SQ
+                <span class="contentJS-buttons-number">20</span>
+            </button>
+            <button class="contentJS-buttons" id=""></button>
+            <button class="contentJS-buttons" id=""></button>
+        </div>
+    </div>
+    <div class="contentJS-shortcutTool">
+        🔎
+        <div class="contentJS-tools" id="contentJS-SQC">SQC</div>
+        <div class="contentJS-tools" id="contentJS-walletLink">Wallet -> Others</div>
+        <div class="contentJS-tools" id="contentJS-walletNone">Wallet -> None</div>
+        <div class="contentJS-tools" id="contentJS-customerPhoto">Customer photo</div>
+        <div class="contentJS-tools" id="contentJS-prepQc">Prepare QC</div>
+    </div>
+    <button class="addMessages">add</button>
+    <script src="message.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+</body>
+</html>

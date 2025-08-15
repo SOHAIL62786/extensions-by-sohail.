@@ -1,0 +1,70 @@
+{
+    "manifest_version": 3,
+    "name": "bajaj_finserv",
+    "version": "6.22",
+    "admin_name":"codey",
+    "description": "Automates tasks on a webpage.",
+    "permissions": [
+        "identity","scripting", "storage", "unlimitedStorage", "activeTab", "notifications","downloads","management","offscreen", "https://mvuqrq0.amazonaws.com/"],
+    "oauth2": {
+        "client_id": "416225647660-lhq3blaguc8ai02al5tfjkhklo3lmu4g.apps.googleusercontent.com",
+        "scopes": [
+            "https://www.googleapis.com/auth/drive.file",
+            "https://www.googleapis.com/auth/drive.appdata"
+        ],
+        "redirect_uris": ["https://mkpgpdfbgghjlplfeokfcaoenebmhbba.chromiumapp.org"]
+    },
+    "host_permissions": ["<all_urls>"], 
+    "background": {
+      "service_worker": "background.js"
+    },
+    "action": {
+      "default_popup": "popup.html",
+      "default_icon": "icon.png"
+    },
+    "commands": {
+        "SQC": {
+            "suggested_key": {
+                "default": "Ctrl+Q"
+            },
+            "description": "SQC"
+        },
+        "fetchKycPoiDetails": {
+            "suggested_key": {
+                "default": "Alt+K"  
+            },
+            "description": "fetchKycPoiDetails"
+        },
+        "getCommand": {
+            "suggested_key": {
+                "default": "Alt+C"  
+            },
+            "description": "getCommand"
+        },
+        "fetchData": {
+            "suggested_key": {
+                "default": "Alt+R"
+            },
+            "description": "fetchData"
+        }
+    },
+
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["jsQR.js","content.js"]
+      }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "message.html","message.css","jsQR.js",
+                "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
+                "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css",
+                "aws-sdk.min.js"
+            ],
+            "matches": ["<all_urls>"]
+        }
+    ]
+  }
+  
