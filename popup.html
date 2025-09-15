@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Automation Tool</title>
+  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  
+  <div class="main">
+    <header>
+      <div class="outerHeader">
+        <span id="home" class="">Home</span>
+      </div>
+      <div class="outerHeader inlineHeader">
+        <span id="loginData" class="active">Login Data</span>
+      </div>
+      <div class="outerHeader permissions">
+        <span id="permissions" >Permissions</span>
+      </div>
+    </header>
+    <div class="mainButtonsArea">
+      <div class="buttonArea loginData pages" style="width: 93%;">
+        <div class="dateInputs">
+          <div class="fromDiv">
+            <label class="date after displayNone" for="dateStart">From</label>
+            <input class = "date before" type="date" id="dateStart">
+          </div>
+          <div class="toDiv">
+            <label class = "date after displayNone" for="dateEnd">To</label>
+            <input class ="date after displayNone" type="date" id="dateEnd" >
+          </div>
+        </div>
+        <button class="generateReport reportButtons">Generate Report</button>
+        <button class="fmFormat reportButtons displayNone">FM Format</button>
+        <button class="downloadLoginData reportButtons displayNone">
+          <i class="fa-solid fa-download"></i> .xlsx</button>
+        <button class="delete reportButtons displayNone fontAwesomeBtns" ><i class="fa-solid fa-trash" style="color: #ff0000;"></i></button>
+        <button class="edit reportButtons fontAwesomeBtns displayNone"><i class="fa-solid fa-pen-to-square"style="color: #023e8a;"></i></button>
+        <input type="text" class="reportButtons displayNone">
+        <button class="saveLoginData reportButtons displayNone">Save</button>
+        <div class="qrScansDisplay">
+          <i class="fa-duotone fa-solid fa-qrcode"></i>
+          <div class="flex">
+            <span id="qrScansCount">0</span>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+    <div class="innerMain">
+      <div id="home" class="displayNone pages">
+        <div id="innerHome">
+          <div class="section fosDetails">
+            <div class="fosDetails-table">
+              <h3>Fos Details</h3>
+              <table>
+                
+                <tr id="fosDetails-table-head">
+                  <th>Sno</th>
+                  <th>Fos Name</th>
+                  <th>Fin One code</th>
+                  <th>Do - Nickname</th>
+                </tr>
+                <!-- <tr class="fosDetails-body">
+                  <td>1.</td>
+                  <td>MOHAMMED SOHAIL</td>
+                  <td>646180</td>
+                </tr> -->
+              </table>
+  
+              <div class="tableButtons">
+                <button id="add">+</button>
+                <button id="save" class="displayNone">save</button>
+                <button class="FDdelete reportButtons fontAwesomeBtns displayNone" ><i class="fa-solid fa-trash" style="color: #ff0000;"></i></button>
+                
+              </div>
+            </div>
+          </div>
+          <div class = "section"id="extensionDetails">
+            <h3>Extension Details</h3>
+            <div class="extensionDetails">
+              <div class="extensionDetails-details name">
+                <span class="key ">Extension Name </span>
+                <span>:</span>
+                <span class="pair">Bajaj finserv</span>
+              </div>
+              <div class="extensionDetails-details admin_name">
+                <span class="key">Admin Name </span>
+                <span>:</span>
+                <span class="pair">Mohammed Abdul Sohail</span>
+              </div>
+              <div class="extensionDetails-details manifest_version">
+                <span class="key">Extension Version </span>
+                <span>:</span>
+                <span class="pair">1.0</span>
+              </div>
+              <div class="extensionDetails-details last_updated">
+                <span class="key">Last Updated </span>
+                <span>:</span>
+                <span class="pair"></span>
+              </div>
+              <div class="extensionDetails-details last_backup">
+                <span class="key">Last Backup </span>
+                <span>:</span>
+                <span class="pair"></span>
+              </div>
+            </div>
+          </div>
+          <div id="backupData">
+            <div class="backupData">
+              <input type="file" id="backupFile" accept=".json">
+              <button id="restoreBackup">Restore <i class="fa-solid fa-repeat"></i></button>
+            </div>
+            <div class="backupData">
+              <button id="backup" >Backup <i class="fa-solid fa-cloud"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id = "loginData" class="loginData pages">
+        
+        <div id="loginTable">
+          <table>
+            <tr class="table-heading">
+              <th id="head1">S.No</th>
+              <th id="head2" class = "dateColumn">Date</th>
+              <th id="head3" style="display: none;">Store Code</th>
+              <th id="head4" style="display: none;">FOS Name</th>
+              <th id="head5" style="display: none;">Nickname</th>
+              <th id="head6" style="display: none;">FinOne Code</th>
+              <th id="head7">Customer Name</th>
+              <th id="head8">Mobile No</th>
+              <th id="head9" style="display: none;">Aid</th>
+              <th id="head10">B-Id</th>
+              <th id="head11">Status</th>
+              <th id="head12">Category</th>
+              <th id="head13">Brand</th>
+              <th id="head14">Price</th>
+              <th id="head15">Billed ?</th>
+              <th id="head16">Stage</th>
+              <th id="head17">Remarks 1</th>
+              <th id="head18">Remarks 2</th>
+            </tr>
+            <!-- <tr><td>1</td><td>14-02-2025</td><td>Rizwana Begum</td><td>7981016693</td><td>B301045692</td><td>Approved</td><td>Mobile</td><td>VIVO</td><td>Billed</td><td>Post Do</td><td>S-12345</td><td>-</td></tr> -->
+          </table>
+        </div>
+      </div>
+      <div id="permissions" class="pages displayNone">
+        <div class="permissions card">
+          <form >
+            <diiv class="permissions-toggle">
+              <span class="serialNo">1</span>
+              <label class = "labels">Messenger</label>
+              <span class="checkBoxInput">
+                <!-- From Uiverse.io by chase2k25 --> 
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="messenger" type="checkbox" />
+                  <label class="switch" for="messenger">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+              </span>
+              <span class ="childParameters messenger displayNone">
+                <span class="serialNo innerArrows"> -> </span>
+                <label class = "innerLabels">Priority</label>
+                <div class="messegePriority radioBox">
+                  <label for="R1" class="radio">1
+                    <input type="radio" name="Radio" id="R1" value=1 class="MP">
+                  </label>
+                  
+                  <label for="R2" class="radio">2
+                    <input type="radio" name="Radio" id="R2" value=2 class="MP">
+                  </label>
+                  
+                  <label for="R3" class="radio">3
+                    <input type="radio" name="Radio" id="R3" value=3 class="MP">
+                  </label>
+                  
+                  <label for="R4" class="radio">4
+                    <input type="radio" name="Radio" id="R4" value=4 class="MP">
+                  </label>
+                  
+                  <label for="R5" class="radio">5
+                    <input type="radio" name="Radio" id="R5" value=5 class="MP">
+                  </label>
+                  
+                  <label for="R6" class="radio">6
+                    <input type="radio" name="Radio" id="R6" value=6 class="MP">
+                  </label>
+                  
+                  <label for="R7" class="radio">7
+                    <input type="radio" name="Radio" id="R7" value=7 class="MP">
+                  </label>
+                  
+                  <label for="R8" class="radio">8
+                    <input type="radio" name="Radio" id="R8" value=8 class="MP">
+                  </label>
+                  
+                  <label for="R9" class="radio">9
+                    <input type="radio" name="Radio" id="R9" value=9 class="MP">
+                  </label>
+                  
+                  <label for="R10" class="radio">10
+                    <input type="radio" name="Radio" id="R10" value=10 class="MP">
+                  </label>
+                  
+                </div>
+              </span>
+            </diiv>
+            <diiv class="permissions-toggle">
+              <span class="serialNo">2</span>
+              <label class = "labels">Qr Scans</label>
+              <span class="checkBoxInput">
+                <!-- From Uiverse.io by chase2k25 --> 
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="qrScans" type="checkbox" />
+                  <label class="switch" for="qrScans">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+              </span>
+              <span class ="childParameters qrScans displayNone">
+                <span class="serialNo innerArrows" > -> </span>
+                <label class = "innerLabels">Screenshot</label>
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="screenshot" type="checkbox" />
+                  <label class="switch" for="screenshot">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+                <input class="permissions-custom-input" type="url" name="qrUrl" id="qrUrl" >
+              </span>
+            </diiv>
+            <diiv class="permissions-toggle">
+              <span class="serialNo">3</span>
+              <label class = "labels">Login Data</label>
+              <span class="checkBoxInput">
+                <!-- From Uiverse.io by chase2k25 --> 
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="LoginData" type="checkbox" />
+                  <label class="switch" for="LoginData">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+              </span>
+              
+            </diiv>
+            <diiv class="permissions-toggle">
+              <span class="serialNo">4</span>
+              <label class = "labels">Submit For Qc</label>
+              <span class="checkBoxInput">
+                <!-- From Uiverse.io by chase2k25 --> 
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="sqc" type="checkbox" />
+                  <label class="switch" for="sqc">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+              </span>
+              <span class ="childParameters sqc displayNone">
+                <span class="serialNo innerArrows"> -> </span>
+                
+                <span class="serialNo innerArrows secondArrow"> SQ - 11 </span>
+                <label class = "innerLabels cmds">Ctrl + Q</label>
+              </span>
+            </diiv>
+            <diiv class="permissions-toggle">
+              <span class="serialNo">5</span>
+              <label class = "labels">Wallet linking => Others</label>
+              <span class="checkBoxInput">
+                <!-- From Uiverse.io by chase2k25 --> 
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="walletLinkOthers" type="checkbox" />
+                  <label class="switch" for="walletLinkOthers">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+              </span>
+              <span class ="childParameters walletLinkOthers displayNone">
+                <span class="serialNo innerArrows"> -> </span>
+                <span class="serialNo innerArrows secondArrow"> WO - 12 </span>
+                
+              </span>
+            </diiv>
+            <diiv class="permissions-toggle">
+              <span class="serialNo">6</span>
+              <label class = "labels">Wallet linking => None</label>
+              <span class="checkBoxInput">
+                <!-- From Uiverse.io by chase2k25 --> 
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="walletLinkNone" type="checkbox" />
+                  <label class="switch" for="walletLinkNone">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+              </span>
+              <span class ="childParameters walletLinkNone displayNone">
+                <span class="serialNo innerArrows"> -> </span>
+                <span class="serialNo innerArrows secondArrow"> WN - 13 </span>
+              </span>
+            </diiv>
+            <diiv class="permissions-toggle">
+              <span class="serialNo">7</span>
+              <label class = "labels">Kyc Poi Number</label>
+              <span class="checkBoxInput">
+                <!-- From Uiverse.io by chase2k25 --> 
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="kycPoi" type="checkbox" />
+                  <label class="switch" for="kycPoi">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+              </span>
+              <span class ="childParameters kycPoi displayNone">
+                <span class="serialNo innerArrows"> -> </span>
+                
+                <span class="serialNo innerArrows secondArrow"> KP - 14 </span>
+                <label class = "innerLabels cmds">Alt + K</label>
+                
+              </span>
+            </diiv>
+            <diiv class="permissions-toggle">
+              <span class="serialNo">8</span>
+              <label class = "labels">Validate Agreement</label>
+              <span class="checkBoxInput">
+                <!-- From Uiverse.io by chase2k25 --> 
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="validateAgreement" type="checkbox" />
+                  <label class="switch" for="validateAgreement">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+              </span>
+              <span class ="childParameters validateAgreement displayNone">
+                <span class="serialNo innerArrows"> -> </span>
+                
+                <span class="serialNo innerArrows secondArrow"> VA - 15 </span>
+                <!-- <label class = "innerLabels cmds">Alt + V</label> -->
+              </span>
+            </diiv>
+            <diiv class="permissions-toggle">
+              <span class="serialNo">9</span>
+              <label class = "labels">Command Panel</label>
+              <span class="checkBoxInput">
+                <!-- From Uiverse.io by chase2k25 --> 
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="commandPanel" type="checkbox" />
+                  <label class="switch" for="commandPanel">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+              </span>
+              <span class ="childParameters commandPanel displayNone">
+                <span class="serialNo innerArrows"> -> </span>
+                
+                <span class="serialNo innerArrows secondArrow" style="visibility: hidden;"></span>
+                <label class = "innerLabels cmds">Alt + C</label>
+              </span>
+            </diiv>
+            <diiv class="permissions-toggle">
+              <span class="serialNo">10</span>
+              <label class = "labels">Read Data</label>
+              <span class="checkBoxInput">
+                <!-- From Uiverse.io by chase2k25 --> 
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="fetchData" type="checkbox" />
+                  <label class="switch" for="fetchData">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+              </span>
+              <span class ="childParameters fetchData displayNone">
+                <span class="serialNo innerArrows"> -> </span>
+                
+                <span class="serialNo innerArrows secondArrow">RD - 16</span>
+                <label class = "innerLabels cmds">Alt + R</label>
+              </span>
+            </diiv>
+            <diiv class="permissions-toggle">
+              <span class="serialNo">11</span>
+              <label class = "labels">Invoice Number</label>
+              <span class="checkBoxInput">
+                <!-- From Uiverse.io by chase2k25 --> 
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="invoiceNumber" type="checkbox" />
+                  <label class="switch" for="invoiceNumber">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+              </span>
+              <span class ="childParameters invoiceNumber displayNone">
+                <span class="serialNo innerArrows"> -> </span>
+                
+                <span class="serialNo innerArrows secondArrow">IN - 19</span>
+                <input class="permissions-custom-input" type="text" name="invoiceNumber" id="invoiceNumber-input" >
+              </span>
+            </diiv>
+            <diiv class="permissions-toggle">
+              <span class="serialNo">12</span>
+              <label class = "labels">Auto Backup</label>
+              <span class="checkBoxInput">
+                <!-- From Uiverse.io by chase2k25 --> 
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="autoBackup" type="checkbox" />
+                  <label class="switch" for="autoBackup">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+              </span>
+              
+            </diiv>
+            <diiv class="permissions-toggle">
+              <span class="serialNo">13</span>
+              <label class = "labels">Auto Refresh</label>
+              <span class="checkBoxInput">
+                <!-- From Uiverse.io by chase2k25 --> 
+                <div class="switch-container">
+                  <input class="toggle-checkbox" id="autoRefresh" type="checkbox" checked="true" disabled ="true"/>
+                  <label class="switch" for="autoRefresh">
+                    <div class="toggle">
+                      <div class="led"></div>
+                    </div>
+                  </label>
+                </div>
+              </span>
+              <span class ="childParameters autoRefresh displayNone">
+                <span class="serialNo innerArrows"> -> </span>
+                <label class = "innerLabels"></label>
+                <div class="autoRefreshParameters radioBox">
+                  <label for="Daily" class="radio">Daily
+                    <input type="radio" name="rpRadio" id="Daily" value="Daily" class="AU" checked="true">
+                  </label>
+                  
+                  <!-- <label for="Weekly" class="radio">Weekly
+                    <input type="radio" name="rpRadio" id="Weekly" value="Weekly" class="AU">
+                  </label>
+                  
+                  <label for="Monthly" class="radio">Monthly
+                    <input type="radio" name="rpRadio" id="Monthly" value="Monthly" class="AU">
+                  </label> -->
+                </div>
+                <!-- <div id="dropdownOuter" class="displayNone">
+                  <div id="dropdownContainer" class="dropdownContainer">
+                    <span class="dropdownText">Monday</span>
+                    <i id="dropdownAngle" class="fa-solid fa-angle-down"></i>
+                    <ul id="dropDownMenu" class="dropdownContainer">
+                      <li id="Monday">Monday</li>
+                      <li id="Tuesday">Tuesday</li>
+                      <li id="Wednesday">Wednesday</li>
+                      <li id="Thursday">Thursday</li>
+                      <li id="Friday">Friday</li>
+                      <li id="Saturday">Saturday</li>
+                      <li id="Sunday">Sunday</li>
+                    </ul>
+                  </div>
+                </div>
+                <div id="dayPicker" class="displayNone">
+                  <div id="oftenDay">1</div>
+                  <div class="calender displayNone" id="" >
+                    <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span>
+                    <span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span>
+                    <span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span>
+                    <span>22</span><span>23</span><span>24</span><span>25</span><span>26</span><span>27</span><span>28</span>
+                  </div>
+                </div> -->
+              </span>
+            </diiv>
+          </form>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+  
+  <script src="xlsx.full.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

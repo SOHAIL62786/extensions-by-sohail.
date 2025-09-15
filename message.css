@@ -1,0 +1,176 @@
+* {
+    padding: 0;
+    margin: 0;
+}
+.contentJS-messageContainer{
+    border-radius: 0.5rem;
+    padding: 5px 5px 5px 8px;
+    overflow-x: hidden;
+}
+div.contentJS-innermessageContainer{
+    background-color: #FFE0E9;
+    color: black;
+    border-radius: 0.2rem;
+    padding: 2px 2px 5px 5px;
+}
+.contentJS-message{
+    background-color: #F8FFE5;
+    display: block;
+    margin-top: 4px;
+    padding: 2px 2px 2px 5px;
+    border-radius: 5px;
+    animation: slideIn 0.5s ease-out forwards;
+}
+.contentJS-impMessages{
+    position: fixed;
+    right: 100px;
+    top: 100px;
+}
+@keyframes slideIn{
+    from{
+        transform : translateX(50%)
+    }
+    to{
+        transform: translateX(0)
+    }
+}
+span.contentJS-close{
+    position: absolute;
+    right: 3vmin;
+    top: 0;
+    cursor: pointer;
+}
+button.addMessages{
+    cursor: pointer;
+    padding: 3px 6px 3px 6px;
+    align-items: center;
+    background-color: #F3D5B5;
+}
+.contentJS-shortcutTool{
+    position: fixed;
+    border-radius: 50%;
+    right: 0;
+    bottom: 10vmin;
+    background-color: aquamarine;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+
+}
+/* control panel */
+#content-commandWall{
+    position: fixed;
+    width: 99%;
+    height: 99%;
+    background-color: lightgrey;
+    opacity: 90%;
+    z-index: 100;
+    top: 50%;
+    bottom: 50%;
+    left: 50%;
+    right: 50%;
+    /* width: 10rem; */
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10vh;
+}
+
+#content-commandInput{
+    width: 40px;
+    height: 50px;
+    background-color: whitesmoke;
+    padding: 5px;
+    border: none;
+    outline: none;
+    border-radius: 3px;
+    color: black;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    font-size: 1rem
+}
+div.contentJS-buttonsDiv{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+button.contentJS-buttons{
+    border: none;
+    border-radius: 10px;
+    height: 35px;
+    width: 300px;
+    box-shadow: 3px 3px 5px #c5c5c5, -3px -3px 5px #ffffff;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 540;
+    text-align: left;
+    padding-left: 20px;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+button.contentJS-buttons span.contentJS-buttons-number{
+    position: absolute;
+    right: 4px;
+    font-size: small;
+    top: 7px;
+    background-color: blueviolet;
+    color: ghostwhite;
+    padding: 2px;
+    border-radius: 2px 5px 5px 2px;
+    text-align: center;
+    align-items: center;
+    font-weight: 900;
+}
+button.contentJS-buttons:hover{
+    scale: 1.1;
+}
+/* end */
+#contentjs-phoneNumber-Counter{
+    position: absolute;
+    transform: translate(-110%, 120%);
+    font-size: medium;
+    z-index: 10;
+    padding: 0px 1px;
+    border-radius: 5px;
+}
+#contentjs-phoneNumber-Counter-slider{
+    display: block;
+    height: 2px;
+    width: 0%;
+    border: 2px solid #085C97;
+    margin-top: 2px;
+}
+.contentJS-tools{
+    position: absolute;
+}
+#contentJS-SQC{
+    transform: translate(-100%,-100%)
+}
+#contentJS-walletLink{
+    transform: translate(-100%,-100%)
+}
+#contentJS-walletNone{
+    transform: translate(-100%,-100%)
+}
+#contentJS-customerPhoto{
+    transform: translate(-100%,-100%)
+}
+#contentJS-prepQc{
+    transform: translate(-100%,-100%)
+}
+.ContentJS-CommandBtn{
+    position: fixed;
+    right: 10px;
+    bottom: 10px;
+    
+    border: 2px solid black;
+    border-radius: 50%;
+    height: 50px;
+    width: 50px;
+    z-index: 10000;
+}
