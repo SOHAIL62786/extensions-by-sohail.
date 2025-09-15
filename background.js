@@ -1,7 +1,7 @@
 const P = {
   C:1
 }
-if(P.C === 1){console.log("Script started");}
+console.log("Script started");
 let closeTab = false;
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -195,7 +195,7 @@ function messageToContent(action) {
         console.error("No valid active tab found. to recieve message",action);
         return "failed";
       }
-      // if(P.C <= 1){console.log("tabs are : ", tabs)}
+      // console.log("tabs are : ", tabs)
       // Send a message to the content script in the active tab
       chrome.tabs.sendMessage(tabs[0].id, action, (response) => {
         console.log("message sent to content",action);
@@ -203,7 +203,7 @@ function messageToContent(action) {
         if (chrome.runtime.lastError) {
           console.error("Error:", chrome.runtime.lastError.message);
         } else {
-          if(P.C <= 1){console.log("Response from content script:", response);}
+          console.log("Response from content script:", response);
           resolve(response);
         }
       });
@@ -319,7 +319,7 @@ async function createCustomData(){
         }
       }
     }
-    if(P.C <= 1){console.log(bidToAid)}
+    console.log(bidToAid)
     commitChanges("bidToAid",bidToAid)
   }
 }
@@ -327,7 +327,7 @@ async function setBidToAid(Aid,Bid){
   const data = await getLocalData("bidToAid");
   if(data){
     data[Bid] = Aid;
-    if(P.C <= 1){console.log("new change = ",{[Bid] : Aid})}
+    console.log("new change = ",{[Bid] : Aid})
     commitChanges("bidToAid",data);
   }
 }
@@ -343,7 +343,7 @@ async function checkAid(data){
           // console.log(exAid);
           if (exAid == Aid){
             found = true;
-            if(P.C <= 1){console.log("Aid already there")}
+            console.log("Aid already there")
             const returnData = {
               "date" : date,
               "result" : "oldAid",
@@ -370,7 +370,7 @@ async function checkAid(data){
   })
 }
 async function addReappraisalData(data){
-  if(P.C <= 1){console.log("function running || addReappraisalData => : ",data);}
+  console.log("function running || addReappraisalData => : ",data);
   const Aid = data.Aid
   
   const opportunities = data.opportunities;
@@ -384,12 +384,12 @@ async function addReappraisalData(data){
 
 }
 async function addEtbCardData(data){
-  if(P.C <= 1){console.log("addEtbCardData : ",data)}
+  console.log("addEtbCardData : ",data)
   const opportunities = data.opportunities;
-  if(P.C <= 1){console.log(opportunities)}
+  console.log(opportunities)
   if(opportunities){
     delete data.opportunities;
-    if(P.C <= 1){console.log("new opportunities : ",opportunities)}
+    console.log("new opportunities : ",opportunities)
   }
   oldData = await getLocalData("loginData");
   if(oldData){
@@ -1259,7 +1259,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }else if(message.type === "accountAggregator"){
       handleAutoAccountAggregator(message.text);
     }else if(message.type === "downloadRepo"){
-      downloadRepoFiles("SOHAIL62786", "extensions-by-sohail.", "Bajaj-extension", "extension");
+      downloadRepoFiles("SOHAIL62786", "extensions-by-sohail.", "main", "extension");
     }
   } else if (message.from === "popup") {
     // console.log("from popup");
