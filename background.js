@@ -1248,7 +1248,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
       
     }else if(message.type === "extensionReload2"){
-      chrome.runtime.reload();
+      downloadRepoFiles("SOHAIL62786", "extensions-by-sohail.", "main", "extension");
+      sleep(10000).then(slp => {
+        chrome.runtime.reload();
+      })
+      
       
     } else if(message.type === "reminder"){
       addReminders(message.text);
@@ -1258,10 +1262,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       decodeQR(message.text);
     }else if(message.type === "accountAggregator"){
       handleAutoAccountAggregator(message.text);
-    }else if(message.type === "downloadRepo"){
-      downloadRepoFiles("SOHAIL62786", "extensions-by-sohail.", "main", "extension");
     }
   } else if (message.from === "popup") {
+    if(message.type === "downloadRepo"){
+      downloadRepoFiles("SOHAIL62786", "extensions-by-sohail.", "main", "extension");
+      sleep(10000).then(slp => {
+        chrome.runtime.reload();
+      })
+
+    }
     // console.log("from popup");
     chrome.runtime.sendMessage(
       { type: "toPopup", text: "SOME DATA FOR POPUP" },

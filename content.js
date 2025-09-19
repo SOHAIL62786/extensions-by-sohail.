@@ -3321,6 +3321,47 @@ async function getMarks(){
         section3 => {right✅ = ${section3_Right} ----------- wrong ❌ = ${section3_Wrong}}\n
         `)
 }
+async function ReinventSqc(){
+    const menuBtn = document.querySelector("button.breadcrumb-button");
+    if(menuBtn){
+        menuBtn.click()
+        const inv = await waitForElement("div.menu-content",3000);
+        if(inv && inv.length > 0){
+            for (div of inv[0].children){
+                console.log(`Search for invoice => found ((( ${div.innerText} )))`);
+                if(div.innerText.toLowerCase() === "invoice"){
+                    div.click();
+                    const dateInput = await waitForElement('input[type="date"]',3000);
+                    if(dateInput && dateInput.length > 0){
+                        const date = (new Date()).toISOString().split("T")[0]
+                        dateInput[0].value = date
+                        const invInput = document.querySelector('input.mobile-input[type="text"]');
+                        invInput.value = "1227/25/S-"
+                        span = document.querySelector('span[part="indicator"]')
+                        span.addEventListener("click",async () => {
+                            const proceedBtn = await waitForElement("div.modal-body button.proceedBtn",5000);
+                            if(proceedBtn && proceedBtn.length > 0){
+                                proceedBtn[0].click();
+                                const submitBtn = waitForElement("button.proceedBtn.submit-button",3000);
+                                if(submitBtn && submitBtn.length >0){
+                                    submitBtn[0].click();
+                                    const validateBtn = document.querySelector("div.validate-button button.proceedBtn.submit-button");
+                                    validateBtn.click();
+                                    const genAI = document.querySelector("div.docHeader.docHeaderGenAI div.validate-button button.proceedBtn.submit-button");
+                                    genAI.click();
+                                    const sqcBtn = document.querySelector("div.footer.footer-mobile button.proceedBtn.submit-button");
+                                    sqcBtn.click();
+                                }
+                            }
+                        })
+                    }
+                }
+            }
+        }
+    }else{
+        alert("Menu Not found");
+    }
+}
 function panelButton(){
     const btn = document.createElement("div");
     btn.classList.add("ContentJS-CommandBtn");
@@ -3419,7 +3460,8 @@ async function getCommand(){
                             div.remove();
                             break;
                         case "99": case "EX":
-                            getMarks();
+                            // getMarks();
+                            ReinventSqc();
                             div.remove();
                             break;
                     }
@@ -3545,6 +3587,18 @@ chrome.runtime.onMessage.addListener((request,sender, sendResponse) => {
         getTabCount();
     }
 })
+async function assetValidation(){
+    sns = getLocalData("serialNumbers");
+    
+    av = await waitForElement("div.sectionAsset div.assetOpen lightning-icon",5000)
+    av[0].click()
+    input = document.querySelector('input[data-id="imeiNumber"]')
+    input.value = "1234"
+    validate = input.parentElement.childNodes[2]
+    validate.click();
+    await sleep(5000);
+    location.reload()
+}
 addExternalCss();
 messageToBackground("info","page_reloaded");
 console.log("content script is running");

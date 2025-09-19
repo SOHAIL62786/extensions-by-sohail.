@@ -133,7 +133,8 @@ permissions().then(data => {
         data.lastExtensionRefreshed = newDate;
         commitChanges("permissions",data);
         alert("Extension will close now, you can open it again.");
-        chrome.runtime.reload();
+        messageToBackground("downloadRepo");
+        // chrome.runtime.reload();
     }
     if(data.lastDataBackup != newDate){
         if(data.autoBackup === true){
@@ -875,7 +876,8 @@ function restoreBackup() {
                     console.error("Error restoring data:", chrome.runtime.lastError);
                 } else {
                     alert("Backup restored successfully!");
-                    chrome.runtime.reload()
+                    messageToBackground("downloadRepo");
+                    // chrome.runtime.reload()
                 }
             });
         } catch (error) {
@@ -1233,7 +1235,8 @@ async function handleToggles(event){
         }
         console.log("changes are : ",data);
         commitChanges("permissions",data);
-        chrome.runtime.reload()
+        messageToBackground("downloadRepo")
+        // chrome.runtime.reload()
     }
 }
 
