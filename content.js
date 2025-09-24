@@ -3190,7 +3190,7 @@ function lastFourDigits(selector){
 }
 async function readQr(type){
     checkMessenger("Reading Qr....",10,5000);
-    const qrElement = await getElement("div.tiles c-account-aggregator c-qr-code-generation").catch(error => console.log(error));
+    const qrElement = await getElement("div.tiles c-account-aggregator div.container.qr-code").catch(error => console.log(error));
     const mobileNumber = await lastFourDigits("div.accordion div.tiles").catch(error => {
         console.log(error);
         checkMessenger("Please validate mobile No. before AA",10,3000);
@@ -3201,7 +3201,7 @@ async function readQr(type){
             behavior: 'smooth',
             block: 'center'
         })
-        qrElement.style.border = "390px solid black"
+        qrElement.style.width = "200px"
         const password = mobileNumber.innerText.slice(mobileNumber.innerText.length - 4, mobileNumber.innerText.length) + dob.value.slice(dob.value.length - 4, dob.value.length);
         messageToBackground("decodeQr",{
             action: "captureQr",
