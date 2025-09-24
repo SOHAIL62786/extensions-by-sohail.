@@ -2143,7 +2143,7 @@ async function getNOReason(Aid){
                     clickHere.children[0].style.backgroundColor = "bisque"
                     clickHere.children[0].style.borderRadius = "10%"
                     clickHere.addEventListener("click",() => {
-                        alert("you clicked something");
+                        // alert("you clicked something");
                         sendError(Aid,"cdd");
                     })
                 }

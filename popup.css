@@ -760,6 +760,9 @@ div#backupData button#backup{
 div#backupData button#restoreBackup{
     color: darkmagenta;
 }
+div#backupData button.resetExtension{
+    color: red;
+}
 div#backupData input#backupFile{
     background-color: lightgray;
     padding: 5px;

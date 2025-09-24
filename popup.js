@@ -97,6 +97,15 @@ function saveLocalData(){
         }
     });
 }
+function messageToBackground(type,text){
+    // send message to background.js
+    chrome.runtime.sendMessage({ to: "background.js", from: "popup", type: type , text: text},(response)=> {
+        // console.log(response);
+        // alert(response.reply);
+        console.log("response from background : ",response);
+        return response
+    });
+};
 const weeks = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
 function daysBetweenDates(date1,date2){
     const newDate1 = new Date(date1);
@@ -888,7 +897,9 @@ function restoreBackup() {
 
     reader.readAsText(file);
 }
-
+function resetExtension(){
+    messageToBackground("downloadRepo");
+}
 async function deleteData(){
     const localData = await getLocalData("loginData");
     if(localData){
@@ -1804,6 +1815,8 @@ function eventListeners(){
     saveFosDetailsBtn.addEventListener("click",saveFosDetailsRow);
     const restoreBtn = document.querySelector("button#restoreBackup");
     restoreBtn.addEventListener("click",restoreBackup)
+    const resetBtn = document.querySelector("button.resetExtension");
+    resetBtn.addEventListener("click",resetExtension);
     deleteBtn.addEventListener("click",deleteData);
     editBtn.addEventListener('click',editData);
     FDdeleteBtn.addEventListener("click",deleteFDdata);

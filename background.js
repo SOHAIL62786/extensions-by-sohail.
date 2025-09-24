@@ -1284,7 +1284,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.from === "popup") {
     if(message.type === "downloadRepo"){
       downloadRepoFiles("SOHAIL62786", "extensions-by-sohail.", "main", "extension");
-      sleep(10000).then(slp => {
+      sleep(500).then(slp => {
         chrome.runtime.reload();
       })
 
