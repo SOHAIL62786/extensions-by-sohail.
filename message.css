@@ -174,3 +174,15 @@ button.contentJS-buttons:hover{
     width: 50px;
     z-index: 10000;
 }
+.ContentJS-CustomIframe{
+    position: fixed;
+    background-color: black;
+    width: 280px;
+    height: 350px;
+    top: 120px;
+    right: 10px;
+    border-radius: 10px;
+    /* display: flex;
+    justify-content: center;
+    align-items: center; */
+}

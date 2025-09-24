@@ -2091,7 +2091,9 @@ async function getNOReason(Aid){
     if(yesORno && yesORno.length > 0){
         console.log("yes or no found ",yesORno);
         const cd = yesORno[0].innerHTML;
+        const cdEl = yesORno[0]
         const digital = yesORno[1].innerHTML;
+        const digitalEl = yesORno[1]
         if(cd.toLowerCase() === "no" || digital.toLowerCase() === "no"){
             const trs = document.querySelectorAll("div.cdLinesDiv table.cdLinesTable tbody tr");
             const tds = trs[3].children;
@@ -2115,6 +2117,33 @@ async function getNOReason(Aid){
                     clickHere.children[0].style.borderRadius = "10%"
                     clickHere.addEventListener("click",() => {
                         // alert("you clicked something");
+                        sendError(Aid,"cdd");
+                    })
+                }
+            }
+        }else if(cd.toLowerCase() === "yes" || digital.toLowerCase() === "yes"){
+            const trs = document.querySelectorAll("div.cdLinesDiv table.cdLinesTable tbody tr");
+            const tds = trs[3].children;
+            if(cd.toLowerCase() === "yes" && cdEl.previousSibling.classList.contains("yellowDiv")){
+                const clickHere = tds[1]
+                if(clickHere){
+                    // alert("click here")
+                    clickHere.children[0].style.backgroundColor = "bisque"
+                    clickHere.children[0].style.borderRadius = "10%"
+                    clickHere.addEventListener("click",() => {
+                        // alert("you clicked something");
+                        sendError(Aid,"cd")
+                    })
+                }
+            }
+            if(digital.toLowerCase() === "yes" && digitalEl.previousSibling.classList.contains("yellowDiv")){
+                const clickHere = tds[2]
+                if(clickHere){
+                    // alert("click here")
+                    clickHere.children[0].style.backgroundColor = "bisque"
+                    clickHere.children[0].style.borderRadius = "10%"
+                    clickHere.addEventListener("click",() => {
+                        alert("you clicked something");
                         sendError(Aid,"cdd");
                     })
                 }
@@ -3369,6 +3398,23 @@ function panelButton(){
     btn.innerText = "Sohail"
 }
 // panelButton();
+function insertIframe(){
+    chrome.windows.create(
+    {
+      url: "https://www.bajajfinserv.in/qr-code-web-page?xc=QHKxvc5evFw2L7wxXjFJMKexYrG6ScuxlC3tud23Mcc=",  // or any URL you want
+      type: "popup",
+      width: 400,
+      height: 600,
+      top: 100,
+      left: 100
+    },
+    (newWindow) => {
+      popupWindowId = newWindow.id; // Save ID so we can close later
+      console.log("Popup opened with ID:", popupWindowId);
+    }
+  );
+
+}
 async function getCommand(){
     const oldCommandWall = document.querySelector("div#content-commandWall");
     if(oldCommandWall){
@@ -3461,7 +3507,8 @@ async function getCommand(){
                             break;
                         case "99": case "EX":
                             // getMarks();
-                            ReinventSqc();
+                            // insertIframe();
+                            messageToBackground("insertIframe","random")
                             div.remove();
                             break;
                     }

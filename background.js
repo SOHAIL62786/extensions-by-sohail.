@@ -1177,7 +1177,23 @@ async function downloadRepoFiles(owner, repo, branch, folder) {
     }
   }
 }
+function insertIframe(){
+    chrome.windows.create(
+    {
+      url: "https://www.bajajfinserv.in/qr-code-web-page?xc=QHKxvc5evFw2L7wxXjFJMKexYrG6ScuxlC3tud23Mcc=",  // or any URL you want
+      type: "popup",
+      width: 400,
+      height: 600,
+      top: 100,
+      left: 100
+    },
+    (newWindow) => {
+      popupWindowId = newWindow.id; // Save ID so we can close later
+      console.log("Popup opened with ID:", popupWindowId);
+    }
+  );
 
+}
 
 
 
@@ -1262,6 +1278,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       decodeQR(message.text);
     }else if(message.type === "accountAggregator"){
       handleAutoAccountAggregator(message.text);
+    }else if(message.type === "insertIframe"){
+      insertIframe();
     }
   } else if (message.from === "popup") {
     if(message.type === "downloadRepo"){
