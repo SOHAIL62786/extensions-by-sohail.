@@ -3099,6 +3099,16 @@ async function addInvoice(){
     editBtn.click();
     const input = await waitForElement('lightning-primitive-input-simple input.slds-input[name="Invoice_Number__c"]')
     if(input && input.length > 0){
+        input[0].addEventListener("keydown", (event) => {
+            if(event.key === "Enter"){
+                const btn = document.querySelector('button[name="SaveEdit"]');
+                if(btn){
+                    btn.click();
+                }else{
+                    checkMessenger("please save manually");
+                }
+            }
+        })
         console.log("input found",input);
         input[0].scrollIntoView({
             behavior: 'smooth',
@@ -3127,14 +3137,14 @@ async function addInvoice(){
         }else{
             console.warn("Date element or dateInput element not found");
         }
-        const approvalStatus = document.querySelector('div[data-target-selection-name="sfdc:RecordField.Opportunity.Payment_Authorization_Status__c"] lightning-formatted-text');
-        if(approvalStatus){
-            if(approvalStatus.innerText === "Approved"){
-                // alert("Payment Authorization is Approved");
-            }else{
-                alert(`Payment Authorization is ${approvalStatus.innerText}`);
-            }
-        }
+        // const approvalStatus = document.querySelector('div[data-target-selection-name="sfdc:RecordField.Opportunity.Payment_Authorization_Status__c"] lightning-formatted-text');
+        // if(approvalStatus){
+        //     if(approvalStatus.innerText === "Approved"){
+        //         // alert("Payment Authorization is Approved");
+        //     }else{
+        //         alert(`Payment Authorization is ${approvalStatus.innerText}`);
+        //     }
+        // }
     }
 }
 async function getElement(selector){

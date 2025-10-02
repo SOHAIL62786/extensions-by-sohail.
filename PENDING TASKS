@@ -1,5 +1,0 @@
-1.  task : Send message to submit file or do something until response is recieved from content 
-    reason : background is sending message but content is not recieving sometimes as it is being loaded.
-3.  task : after clicking submit button on sqc and query button again to check if it is disabled, if its not then click again
-    reason : sometimes sqc button is not being clicked.
-
