@@ -186,3 +186,18 @@ button.contentJS-buttons:hover{
     justify-content: center;
     align-items: center; */
 }
+.ContentJS-verticalMenuBar{
+    position: fixed;
+    left: 0px;
+    height: 50%;
+    width: 10px;
+    top: 28%;
+    background-color: blue;
+    border-radius: 50px;
+    cursor: pointer;
+    z-index: 1000;
+}
+.ContentJS-verticalMenuBar:hover{
+    top: 20%;
+    height: 60%;
+}

@@ -1,4 +1,25 @@
 console.dir(document.body.baseURI);
+function handleMenuBar(div){
+    console.log("function running Handle menu bar");
+    
+}
+const preVbar = document.querySelector("div.ContentJS-verticalMenuBar");
+if(!preVbar){
+    const verticalMenuBar = document.createElement("div");
+    verticalMenuBar.classList.add("ContentJS-verticalMenuBar");
+    document.body.append(verticalMenuBar);
+    verticalMenuBar.addEventListener("mouseover",(event) => {
+        console.log("hover on vwall",event);
+        const wall = document.querySelector("div#content-commandWall");
+        if(wall){
+            wall.remove();
+        }else{
+            getCommand();
+        }
+    })
+
+}
+
 const gmdElements = [
     "div.slds-checkbox label[for*='checkbox-unique-id-100'] span.slds-checkbox_faux",
     "div.slds-checkbox label[for*='checkbox-unique-id-101'] span.slds-checkbox_faux",
@@ -3103,9 +3124,11 @@ async function addInvoice(){
             if(event.key === "Enter"){
                 const btn = document.querySelector('button[name="SaveEdit"]');
                 if(btn){
+                    btn.dispatchEvent(new Event("click",{bubbles:true}));
                     btn.click();
+                    console.log("btn clicked");
                 }else{
-                    checkMessenger("please save manually");
+                    console.log("please save manually")
                 }
             }
         })
@@ -3119,6 +3142,8 @@ async function addInvoice(){
             alert("invoice number is already added");
         }else{
             input[0].value = permissions.invoiceNumberSeries || "1227/25/S-";
+            input[0].dispatchEvent(new Event("input",{bubbles:true}));
+            input[0].dispatchEvent(new Event("change",{bubbles:true}));
             
         }
         const dateEl = document.querySelector('records-record-layout-item[field-label="Created By"] lightning-formatted-text');
@@ -3654,7 +3679,7 @@ async function assetValidation(){
     validate = input.parentElement.childNodes[2]
     validate.click();
     await sleep(5000);
-    location.reload()
+    location.reload();
 }
 addExternalCss();
 messageToBackground("info","page_reloaded");
