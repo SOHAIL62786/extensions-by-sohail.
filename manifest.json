@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "bajaj_finserv",
-    "version": "6.22",
+    "version": "10.07",
     "admin_name":"codey",
     "description": "Automates tasks on a webpage.",
     "permissions": [

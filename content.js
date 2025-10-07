@@ -3481,25 +3481,30 @@ async function getCommand(){
                         case "00": case "CC":
                             div.remove();
                             break;
-                        case "11": case "SQ":
+                        case "11": case "IN":
                             div.remove();
-                            normalSQC();
+                            addInvoice();
+                            // normalSQC();
                             break;
-                        case "12": case "WO":
-                            div.remove();
-                            walletLinking("link");
-                            break;
-                        case "13": case "WN":
-                            div.remove();
-                            walletLinking("unlink");
-                            break;
-                        case "14": case "KP":
+                        case "12": case "KP":
                             div.remove();
                             fetchKycPoiDetails();
+                            // walletLinking("link");
                             break;
-                        case "15": case "VA":
+                        case "13": case "WO":
                             div.remove();
+                            walletLinking("link");
+                            // walletLinking("unlink");
+                            break;
+                        case "14": case "VA":
+                            div.remove();
+                            // fetchKycPoiDetails();
                             validateAgreement();
+                            break;
+                        case "15": case "SQ":
+                            div.remove();
+                            // validateAgreement();
+                            normalSQC();
                             break;
                         case "16": case "RD":
                             div.remove();
@@ -3513,9 +3518,11 @@ async function getCommand(){
                             div.remove();
                             getFMApprovals();
                             break;
-                        case "19": case "IN":
+                        case "19": case "WN":
                             div.remove();
-                            addInvoice();
+                            // normalSQC();
+                            walletLinking("unlink");
+                            // addInvoice();
                             break;
                         case "10": case "WVS": case "NTBS":
                             div.remove();
