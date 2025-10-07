@@ -52,11 +52,9 @@
 
     "content_scripts": [
       {
-        "matches": ["<all_urls>"],
-        "exclude_matches": [
-            "*://chatgpt.com/*",
-            "*://github.com/*"
-            ],
+        "matches": ["*://bflconsumer.my.site.com/*",
+        "*://*.bajajfinserv.in/*",
+        "*://bfin.in/*"],
         "js": ["jsQR.js","content.js"]
       }
     ],

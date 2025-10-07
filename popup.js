@@ -1246,7 +1246,7 @@ async function handleToggles(event){
         }
         console.log("changes are : ",data);
         commitChanges("permissions",data);
-        messageToBackground("downloadRepo")
+        // messageToBackground("downloadRepo");
         // chrome.runtime.reload()
     }
 }
