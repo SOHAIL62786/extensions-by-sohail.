@@ -1197,7 +1197,7 @@ async function checkAid(Aid){
 
 async function getData2(data){
     return new Promise(async (resolve, reject) => {
-        navigator.clipboard.writeText(data.num)
+        // navigator.clipboard.writeText(data.num)
         /*** { Customer deatils heading }***/
         const elements = await waitForElement("div.Heading.slds-col.slds-large-size_1-of-2.slds-max-small-size_1-of-1.Customer-Details-heading",300000).catch(error => console.log(error))
         if(elements && elements.length > 0){
@@ -1398,6 +1398,12 @@ function grabNumber(){
                 async function listenSearchBtn(Action){
                     waitForElement("div.Heading.slds-col.slds-large-size_1-of-2.slds-max-small-size_1-of-1.Customer-Details-heading",300000).then(element => {
                         const num = elements[0].value;
+                        try {
+                            navigator.clipboard.writeText(num);
+                            console.log('Copied!');
+                        } catch (e) {
+                            console.error('Clipboard failed:', e);
+                        }
                         const resolveData = {
                             "num": num,
                             "searchBtn": searchBtn,
@@ -1437,6 +1443,14 @@ function grabNumber(){
                                 span2.style.borderColor = "#085C97"
                             }
                         });
+                        numInput.addEventListener("keydown",(event) => {
+                            console.log(event);
+                            if(event.key === "Enter"){
+                                console.log("phone number entered")
+                                // alert("phone number submitted");
+                                searchBtn.click();
+                            }
+                        })
                         checkMessenger("number counter added",1,3000);
                     }else{
                         console.log("nothing found");
@@ -3450,6 +3464,29 @@ function insertIframe(){
   );
 
 }
+async function assetValidation(){
+    const tiles = await waitForElement("div.tiles",10000);
+    tiles[5].scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+    })
+    const label = tiles[5].querySelectorAll("label")
+    label[0].click()
+    label[1].click()
+    await sleep(2000)
+    const input = tiles[5].querySelector('lightning-input[data-id="imeiNumber"] input')
+    input.value = Number(input.value)+1
+    const button = tiles[5].querySelector('button.slds-button.slds-button_neutral');
+    button.click();
+    const statusDiv = tiles[5].querySelector('div[data-id="assetData"]');
+    statusDiv.innerText.includes("Asset Validated");
+    await sleep(3000)
+    // location.reload()
+}
+function getReportData(){
+    const tables = document.querySelectorAll("div.edge-builder-ii table");
+    
+}
 async function getCommand(){
     const oldCommandWall = document.querySelector("div#content-commandWall");
     if(oldCommandWall){
@@ -3530,7 +3567,7 @@ async function getCommand(){
                             break;
                         case "20": case "KVS": case "ETBS":
                             div.remove();
-                            responsiveSubmit("ETB",1);
+                            responsiveSubmit("ETB",2);
                             break;
                         case "96": case "RL":
                             div.remove();
@@ -3594,7 +3631,8 @@ chrome.runtime.onMessage.addListener((request,sender, sendResponse) => {
         getCommand();
         sendResponse({ status: 'Function invoked successfully' });
     }else if(request.action === "fetchData"){
-        readQr("command");
+        // readQr("command");
+        assetValidation()
         sendResponse({ status: 'Function invoked successfully' });
     }else if(request.action === "searchCustomer"){
         // checkMessenger("you are searching for new customer")
@@ -3676,18 +3714,18 @@ chrome.runtime.onMessage.addListener((request,sender, sendResponse) => {
         getTabCount();
     }
 })
-async function assetValidation(){
-    sns = getLocalData("serialNumbers");
+// async function assetValidation(){
+//     sns = getLocalData("serialNumbers");
     
-    av = await waitForElement("div.sectionAsset div.assetOpen lightning-icon",5000)
-    av[0].click()
-    input = document.querySelector('input[data-id="imeiNumber"]')
-    input.value = "1234"
-    validate = input.parentElement.childNodes[2]
-    validate.click();
-    await sleep(5000);
-    location.reload();
-}
+//     av = await waitForElement("div.sectionAsset div.assetOpen lightning-icon",5000)
+//     av[0].click()
+//     input = document.querySelector('input[data-id="imeiNumber"]')
+//     input.value = "1234"
+//     validate = input.parentElement.childNodes[2]
+//     validate.click();
+//     await sleep(5000);
+//     location.reload();
+// }
 addExternalCss();
 messageToBackground("info","page_reloaded");
 console.log("content script is running");
