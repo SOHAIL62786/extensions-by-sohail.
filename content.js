@@ -1755,15 +1755,22 @@ async function initiateQrOtp4(num){
             console.log(form.children)
             await sleep(100);
             form.children[0].children[0].value = num
+            form.children[0].children[0].dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
             await sleep(100);
             // form.children[3].children[0].click()
             // await sleep(100);
-            form.children[3].click();
+            form.children[3].querySelector("input").click();
+            console.log("checkbox checked")
+            await sleep(100)
+            form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+            console.log("form submitted");
             waitForElementWithText("div.tnc__error-message","please accept",2000).then(async (element) => {
-                form.children[3].children[0].click();
+                form.children[3].querySelector("input")?.click();
                 await sleep(200);
-                form.children[5].click();
+                // form.querySelector("button")?.click();
+                form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
             }).catch(error => console.log("element not found",error));
+            
             waitForElementWithText("h2.consent-login-modal__heading.fs-18.flex-jc-center.mb-16","consent",3000).then(element => {
                 if(element){
                     checkMessenger("consent element found",10,3000);
@@ -3487,6 +3494,53 @@ function getReportData(){
     const tables = document.querySelectorAll("div.edge-builder-ii table");
     
 }
+async function fillCategoryDetails(){
+    const popup = document.querySelector("div.popup")
+    const inputs = popup.querySelectorAll("input");
+    const category = inputs[0];
+    const price = inputs[1];
+    const dp = inputs[2];
+    category.value = "PHONE(WEB-MOBILE)"
+    price.value = 50000
+    dp.value = 0
+    const buttons = popup.querySelectorAll("button");
+    const li = popup.querySelector("ul li");
+    await sleep(3000)
+    li?.click()
+    const submit = buttons[1];
+    submit.click();
+}
+async function fillCategoryDetails2(){
+    const popups = await waitForElement("div.popup",60000)
+    if(popups && popups.length > 0){
+        console.log("popup found");
+        const inputs = popups[0].querySelectorAll("input");
+        const category = inputs[0];
+        category.addEventListener("input", (event) => {
+            console.log("event triggered",event.target.value)
+            const lis = popups[0].querySelectorAll("ul li");
+            if(lis && lis.length >0){
+                console.log("li found",lis);
+                lis.forEach(li => {
+                    li.addEventListener("click", () => {
+                        const price = inputs[1];
+                        const dp = inputs[2];
+                        const buttons = popup.querySelectorAll("button");
+                        const submit = buttons[1];
+                        price.value = 50000
+                        dp.value = 0
+                        submit.click();
+                    })
+                }) 
+            }
+        })
+        
+
+        
+    }
+    
+    
+}
 async function getCommand(){
     const oldCommandWall = document.querySelector("div#content-commandWall");
     if(oldCommandWall){
@@ -3587,7 +3641,8 @@ async function getCommand(){
                         case "99": case "EX":
                             // getMarks();
                             // insertIframe();
-                            messageToBackground("insertIframe","random")
+                            // messageToBackground("insertIframe","random")
+                            fillCategoryDetails2();
                             div.remove();
                             break;
                     }

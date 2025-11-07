@@ -1204,7 +1204,8 @@ chrome.commands.onCommand.addListener((command) => {
     messageToContent({ action: "SQC" });
   } else if (command === "fetchKycPoiDetails") {
     console.log("command passes : ", command);
-    messageToContent({ action: "fetchKycPoiDetails" });
+    // messageToContent({ action: "fetchKycPoiDetails" });
+    messageToContent({action:"initiateQragain",phone:8919558073});
   } else if (command === "getCommand") {
     console.log("command passes : ", command);
     messageToContent({ action: "getCommand" });
