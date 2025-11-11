@@ -56,6 +56,11 @@
         "*://*.bajajfinserv.in/*",
         "*://bfin.in/*"],
         "js": ["jsQR.js","content.js"]
+      },
+      { 
+        "matches": ["https://bflconsumer.my.site.com/dealerRevamp/s/report/*"],
+        "js": ["xlsx.full.min.js","iframeContent.js"],
+        "all_frames": true
       }
     ],
     "web_accessible_resources": [

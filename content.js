@@ -3541,6 +3541,60 @@ async function fillCategoryDetails2(){
     
     
 }
+async function fetchIframeData(){
+    const iframe = document.querySelector("iframe");
+    iframe.style.height = "100000px"
+    const widgets = iframe.contentDocument.querySelector("div.widgets");
+    widgets.children[widgets.children.length - 1].style.height = "100%"
+    await sleep("3000");
+    const tables = iframe.contentDocument.querySelectorAll("table");
+    const dataTable = tables[tables.length-1];
+    let trs = dataTable.querySelectorAll("tr");
+    dataTable.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end'
+    })
+    await sleep("3000   ")
+    console.log("table content = ",trs);
+    let newTrs = []
+    let rowCount = 1
+    trs.forEach((tr,index) => {
+        console.log("index is = ",index);
+        console.log(tr.innerText)
+        let newTr = []
+        
+        if(index < 1){
+            console.log("index is ",index);
+            const ths = tr.querySelectorAll("th");
+
+            ths.forEach((th,index) => {
+                if(index < 1){
+                    newTr.push("Sno");
+                }else{
+                    span = th.querySelector("span.lightning-table-cell-measure-header-value");
+                    console.log("span value is ",span)
+                    newTr.push(span.innerText);
+                }
+            })
+        }else{
+            newTr.push(rowCount);
+            rowCount = rowCount + 1
+            const tds = tr.querySelectorAll("td");
+            for (td of tds){
+                newTr.push(td.innerText);
+            }
+        }
+        newTrs.push(newTr);
+    })
+    console.log("new table data is = ",newTrs);
+    iframe.style.height = ""
+    widgets.children[widgets.children.length - 1].style.height = ""
+    const worksheet = XLSX.utils.aoa_to_sheet(newTrs);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook,worksheet,"sheet1");
+    XLSX.writeFile(workbook,`data.xlsx`)
+    
+}
 async function getCommand(){
     const oldCommandWall = document.querySelector("div#content-commandWall");
     if(oldCommandWall){
@@ -3623,6 +3677,10 @@ async function getCommand(){
                             div.remove();
                             responsiveSubmit("ETB",2);
                             break;
+                        case "80": case "DD":
+                            div.remove();
+                            fetchIframeData();
+                            break;
                         case "96": case "RL":
                             div.remove();
                             location.reload();
@@ -3642,7 +3700,8 @@ async function getCommand(){
                             // getMarks();
                             // insertIframe();
                             // messageToBackground("insertIframe","random")
-                            fillCategoryDetails2();
+                            // fillCategoryDetails2();
+                            
                             div.remove();
                             break;
                     }
