@@ -806,8 +806,103 @@ async function getDatesArray(startDate,endDate){
     console.log("returning dates = ",Dates);
     return Dates
 }
+async function getDatesArray2(startDate,endDate){
+    const newStartDate = startDate.split("_").reverse().join("-");
+    const newEndDate = endDate.split("_").reverse().join("-");
+    const newDates = [];
+    const Dates = []
+    const datesInData = await getLocalData("DateToAid");
+    for(let date in datesInData){
+        const newDate = date.split("_").reverse().join("-");
+        newDates.push(newDate);
+    }
+    newDates.sort((a,b) => new Date(a) - new Date(b))
+    console.log("sorted dates = ",newDates);
+    async function findStart(start){
+        let found = false
+        let tries = 0
+        let dateFound = ""
+        let lastStart = start
+        while (found === false){
+            tries = tries + 1
+            if(tries > 1){
+                DArray = lastStart.split("-");
+                const newDay = Number(DArray[2]) + 1
+                const newDay2 = newDay < 10 ? "0" + newDay : newDay
+                DArray.splice(2,1,newDay2);
+                lastStart = DArray.join("-");
+            }
+            for(let date of newDates){
+                if(date === lastStart){
+                    found = true
+                    dateFound = date
+                    console.log("startdate found ✔✔✅",date)
+                    break;
+                }
+            }
+            if(tries >= 10){
+                console.log("maximum tries reached ",tries," breaking while loop")
+                break;
+            }
+        }
+        console.log("Start date found, returning = ",dateFound);
+        return dateFound
+    }
+    async function findEnd(End){
+        let found = false
+        let tries = 0
+        let dateFound = ""
+        let lastEnd = End
+        while (found === false){
+            tries = tries + 1
+            if(tries > 1){
+                DArray = lastEnd.split("-");
+                const newDay = Number(DArray[2]) - 1
+                const newDay2 = newDay < 10 ? "0" + newDay : newDay
+                DArray.splice(2,1,newDay2);
+                lastEnd = DArray.join("-");
+            }
+            for(let date of newDates){
+                if(date === lastEnd){
+                    found = true
+                    dateFound = date
+                    break;
+                }
+            }
+            if(tries >= 10){
+                console.log("maximum tries reached ",tries," breaking while loop")
+                break;
+            }
+        }
+        console.log("End date found, returning = ",dateFound);
+        return dateFound
+    }
+    const startDateRes = await findStart(newStartDate);
+    const endDateRes = await findEnd(newEndDate);
+    if(startDateRes && endDateRes){
+        let start = false
+        let stop = false
+        for(let date of newDates){
+            if(date === startDateRes){
+                start = true
+            }else if(date === endDateRes){
+                console.log("it is enddate")
+                stop = true
+            }
+            if(start === true && stop === false){
+                Dates.push(date.split("-").reverse().join("_"))
+            }else if(stop === true){
+                Dates.push(date.split("-").reverse().join("_"))
+                break;
+            }
+        }
+        console.log("dates returned = ",Dates);
+        return Dates;
+    }
+}
+
 async function getDatesData(startDate,endDate){
-    const datesArray = await getDatesArray(startDate,endDate)
+    let datesArray = await getDatesArray2(startDate,endDate);
     const dateData = await getLocalData("DateToAid");
     const loginData = await getLocalData("loginData");
     if(dateData && loginData){
