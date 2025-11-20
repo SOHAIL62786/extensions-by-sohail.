@@ -769,6 +769,24 @@ div#backupData input#backupFile{
     border-radius: 6px;
     width: 200px;
 }
+@keyframes loadDiv {
+    0% {
+        transform: rotate(0deg);
+    }
+    100%{
+        transform: rotate(360deg);
+    }
+}
+div.loading{
+    border-width: 2px 0px 0px 0px;
+    border-style: solid;
+    border-color: #264653;
+    border-radius: 50%;
+    height: 30px;
+    width: 30px;
+    animation: loadDiv 2s infinite;
+}
+
 .displayNone{
     display: none !important;
 }

@@ -1,5 +1,6 @@
 
 const generateReport = document.querySelector(".generateReport");
+const loadingDiv = document.querySelector("div.loading");
 const loginTable = document.querySelector("#loginData table tbody");
 const dateInput = document.querySelector("input#dateStart")
 const todayDate = new Date().toISOString().split('T')[0];
@@ -902,7 +903,7 @@ async function getDatesArray2(startDate,endDate){
 }
 
 async function getDatesData(startDate,endDate){
-    let datesArray = await getDatesArray2(startDate,endDate);
+    const datesArray = await getDatesArray2(startDate,endDate);
     const dateData = await getLocalData("DateToAid");
     const loginData = await getLocalData("loginData");
     if(dateData && loginData){
@@ -1220,26 +1221,33 @@ async function displayQrScans(date = new Date().toISOString().split("T")[0]){
     qrScansCount.innerText = qrScans;
 }
 async function checkDates(){
-    console.log("checking dates")
-    const startDate = changeDateFormat(document.querySelector("input#dateStart").value);
-    const endDate = changeDateFormat(document.querySelector("input#dateEnd").value);
-    console.log(startDate,endDate)
-    if(startDate.length <= 10 && endDate.length <= 10){
-        await getDatesData(startDate,endDate);
-        await displayQrScansdates(startDate,endDate)
-        await sleep(1000);
-        snoToCheckBox();
-        fmFormat.classList.add("displayNone");
-    }else if(startDate !== ""){
-        console.log("going with start date")
-        await showLoginDataSingleDate();
-        await displayQrScans(startDate.split("_").reverse().join("-"));
-        await sleep(1000);
-        snoToCheckBox()
-    }else{
-        console.log("something went wrong")
+    try{
+        console.log("checking dates")
+        const startDate = changeDateFormat(document.querySelector("input#dateStart").value);
+        const endDate = changeDateFormat(document.querySelector("input#dateEnd").value);
+        console.log(startDate,endDate)
+        if(startDate.length <= 10 && endDate.length <= 10){
+            await getDatesData(startDate,endDate);
+            await displayQrScansdates(startDate,endDate)
+            await sleep(1000);
+            snoToCheckBox();
+            fmFormat.classList.add("displayNone");
+        }else if(startDate !== ""){
+            console.log("going with start date")
+            await showLoginDataSingleDate();
+            await displayQrScans(startDate.split("_").reverse().join("-"));
+            await sleep(1000);
+            snoToCheckBox()
+        }else{
+            console.log("something went wrong")
+        }
+        showDeleteBtn()
+        loadingDiv.classList.add("displayNone")
+    }catch(error){
+        console.error(error);
+        loadingDiv.classList.add("displayNone")
     }
-    showDeleteBtn()
+    
 }
 
 // listen
@@ -1256,6 +1264,7 @@ chrome.runtime.onMessage.addListener((message,sender, sendResponse) => {
     
 })
 generateReport.addEventListener("click",()=> {
+    loadingDiv.classList.remove("displayNone")
     document.querySelectorAll("tr.table-body").forEach((tr)=> {
         tr.remove();
     })
