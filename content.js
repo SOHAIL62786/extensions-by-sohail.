@@ -3549,12 +3549,12 @@ async function fetchIframeData(){
     await sleep("3000");
     const tables = iframe.contentDocument.querySelectorAll("table");
     const dataTable = tables[tables.length-1];
-    let trs = dataTable.querySelectorAll("tr");
     dataTable.scrollIntoView({
         behavior: 'smooth',
         block: 'end'
     })
-    await sleep("3000   ")
+    await sleep("3000");
+    let trs = dataTable.querySelectorAll("tr");
     console.log("table content = ",trs);
     let newTrs = []
     let rowCount = 1
@@ -3573,7 +3573,7 @@ async function fetchIframeData(){
                 }else{
                     span = th.querySelector("span.lightning-table-cell-measure-header-value");
                     console.log("span value is ",span)
-                    newTr.push(span.innerText);
+                    newTr.push(span?.innerText || "");
                 }
             })
         }else{
@@ -3593,6 +3593,107 @@ async function fetchIframeData(){
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook,worksheet,"sheet1");
     XLSX.writeFile(workbook,`data.xlsx`)
+    
+}
+function downloadJSON(data){
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], {type: "application/json"});
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "data.json"
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+async function fetchIframeData2(){
+    async function makeArray(trs){
+        
+        // const lastCell = trs[trs.length -1 ].lastChild
+        console.log("table content = ",trs);
+        let newTrs = []
+        let rowCount = 1
+        trs.forEach((tr,index) => {
+            console.log("index is = ",index);
+            console.log(tr.innerText)
+            let newTr = []
+            
+            if(index < 1){
+                console.log("index is ",index);
+                const ths = tr.querySelectorAll("th");
+
+                ths.forEach((th,index) => {
+                    if(index < 1){
+                        newTr.push("Sno");
+                    }else{
+                        span = th.querySelector("span.lightning-table-cell-measure-header-value");
+                        console.log("span value is ",span)
+                        newTr.push(span?.innerText || "");
+                    }
+                })
+            }else{
+                newTr.push(rowCount);
+                rowCount = rowCount + 1
+                const tds = tr.querySelectorAll("td");
+                for (td of tds){
+                    newTr.push(td.innerText);
+                }
+            }
+            newTrs.push(newTr);
+        })
+        
+        return newTrs
+        console.log("new table data is = ",newTrs);
+    }
+    function mergeArrays(newTrs1,newTrs2){
+        const index1 = newTrs1[0]
+        const index2 = newTrs2[0].reverse
+        let deleteIndex = null
+        for (value of index1){
+            index2.forEach((val,inx) => {
+                if(val == value || val == ""){
+                    console.log("duplicate or empty value", val);
+                }else{
+                    deleteIndex = inx -1
+                }
+            })
+        }
+    }
+    const iframe = document.querySelector("iframe");
+    iframe.style.height = "100000px"
+    const widgets = iframe.contentDocument.querySelector("div.widgets");
+    widgets.children[widgets.children.length - 1].style.height = "100%"
+    await sleep("3000");
+    const tables = iframe.contentDocument.querySelectorAll("table");
+    const dataTable = tables[tables.length-1];
+    let trs = dataTable.querySelectorAll("tr");
+    dataTable.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end'
+    })
+    await sleep("3000");
+    const newTrs1 = await makeArray(trs);
+    trs[trs.length -1 ].lastChild.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end'
+    })
+    await sleep("3000");
+    const newTrs2 = await makeArray(trs);
+    console.log("newTrs1 = ",newTrs1);
+    console.log("newTrs2 = ",newTrs2);
+    if(newTrs1 && newTrs2){
+        downloadJSON(newTrs1);
+        downloadJSON(newTrs2)
+        // mergeArrays(newTrs1,newTrs2)
+    }
+    iframe.style.height = ""
+    widgets.children[widgets.children.length - 1].style.height = ""
+    alert("both trs added");
+    // const worksheet = XLSX.utils.aoa_to_sheet(newTrsMerged);
+    // const workbook = XLSX.utils.book_new();
+    // XLSX.utils.book_append_sheet(workbook,worksheet,"sheet1");
+    // XLSX.writeFile(workbook,`data.xlsx`)
     
 }
 async function getCommand(){
@@ -3680,6 +3781,10 @@ async function getCommand(){
                         case "80": case "DD":
                             div.remove();
                             fetchIframeData();
+                            break;
+                        case "81": case "D2":
+                            div.remove();
+                            fetchIframeData2();
                             break;
                         case "96": case "RL":
                             div.remove();

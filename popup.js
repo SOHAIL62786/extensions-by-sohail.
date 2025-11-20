@@ -819,7 +819,7 @@ async function getDatesData(startDate,endDate){
             for(let Aid of Aids){
                 console.log("Aid = ",Aid)
                 SNo = SNo + 1
-                const opportunities = loginData[Aid].opportunities;
+                const opportunities = loginData[Aid]?.opportunities;
                 if(opportunities && opportunities.length > 0 && opportunities[0] !== null){
                     await addDataWithBid(opportunities,SNo,loginData,Aid,date);
                 }else{
