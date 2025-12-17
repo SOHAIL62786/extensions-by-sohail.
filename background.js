@@ -709,6 +709,9 @@ const urlCheck = () => {
       }else if(url === "https://bflconsumer.my.site.com/dealerRevamp/s/opportunity/Opportunity/Default"){
         console.log("you are on opportunity page");
         messageToContent({ action: "getOpportunityStages" });
+      }else if(url.includes("di-report")){
+        console.log("you are on opportunity page");
+        messageToContent({ action: "di-report" });
       }
       if (url.startsWith("https://bflconsumer.my.site.com/dealerRevamp/s/customer/")){
         console.log("you are viewing customer");

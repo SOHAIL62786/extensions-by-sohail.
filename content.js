@@ -3145,8 +3145,9 @@ async function addInvoice(){
             if(event.key === "Enter"){
                 const btn = document.querySelector('button[name="SaveEdit"]');
                 if(btn){
-                    btn.dispatchEvent(new Event("click",{bubbles:true}));
-                    btn.click();
+                    // btn.dispatchEvent(new Event("click",{bubbles:true}));
+                    // btn.click();
+                    btn.focus();
                     console.log("btn clicked");
                 }else{
                     console.log("please save manually")
@@ -3183,14 +3184,7 @@ async function addInvoice(){
         }else{
             console.warn("Date element or dateInput element not found");
         }
-        // const approvalStatus = document.querySelector('div[data-target-selection-name="sfdc:RecordField.Opportunity.Payment_Authorization_Status__c"] lightning-formatted-text');
-        // if(approvalStatus){
-        //     if(approvalStatus.innerText === "Approved"){
-        //         // alert("Payment Authorization is Approved");
-        //     }else{
-        //         alert(`Payment Authorization is ${approvalStatus.innerText}`);
-        //     }
-        // }
+        
     }
 }
 async function getElement(selector){
@@ -3534,12 +3528,7 @@ async function fillCategoryDetails2(){
                 }) 
             }
         })
-        
-
-        
     }
-    
-    
 }
 async function fetchIframeData(){
     const iframe = document.querySelector("iframe");
@@ -3595,6 +3584,7 @@ async function fetchIframeData(){
     XLSX.writeFile(workbook,`data.xlsx`)
     
 }
+
 function downloadJSON(data){
     const jsonStr = JSON.stringify(data, null, 2);
     const blob = new Blob([jsonStr], {type: "application/json"});
@@ -3696,6 +3686,258 @@ async function fetchIframeData2(){
     // XLSX.writeFile(workbook,`data.xlsx`)
     
 }
+async function fetchIframeData3(){
+    let iframe = document.querySelector("iframe");
+    iframe.style.height = "100000px"
+    console.log("iframe height increased");
+    let table = iframe.contentDocument.querySelector("table.data-grid-table.data-grid-full-table");
+    console.log(table);
+    async function shrinkIframe(){
+        const trss = table.querySelectorAll("tbody tr");
+        for (let tr of trss){
+            tr.style.height = "30px"
+        }
+        console.log("tr shrinked");
+        const divs = table.querySelectorAll("tbody tr div.data-grid-table-cell-box");
+        for (let div of divs){
+            div.style.height = "30px"
+        }
+        console.log("div shrinked");
+    }
+    async function hoverOn(item){
+        item.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+        })
+    }
+    async function readData(){
+        let trs = table.querySelectorAll("tr");
+        console.log("table content = ",trs);
+        let newTrs = []
+        let rowCount = 1
+        trs.forEach((tr,index) => {
+            console.log("index is = ",index);
+            // console.log(tr.innerText);
+            let newTr = []
+            
+            if(index < 1){
+                console.log("index is ",index);
+                const ths = tr.querySelectorAll("th");
+
+                ths.forEach((th,index) => {
+                    if(index < 1){
+                        newTr.push("Sno");
+                    }else{
+                        span = th.querySelector("span.lightning-table-cell-measure-header-value");
+                        // console.log("span value is ",span);
+                        newTr.push(span?.innerText || "");
+                    }
+                })
+            }else{
+                newTr.push(rowCount);
+                rowCount = rowCount + 1
+                const tds = tr.querySelectorAll("td");
+                for (td of tds){
+                    newTr.push(td.innerText);
+                }
+            }
+            newTrs.push(newTr);
+        })
+        hoverOn(trs[trs.length -1])
+        console.log("new table data is = ",newTrs);
+        return newTrs
+    }
+    async function downloadFile(newTrs){
+        const worksheet = XLSX.utils.aoa_to_sheet(newTrs);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook,worksheet,"sheet1");
+        XLSX.writeFile(workbook,`data.xlsx`);
+    }
+    // await shrinkIframe();
+    await sleep("3000")
+    async function processData(){
+        const times = await prompt("How many times do you want to crawl?");
+        const mainArray = []
+        const finalArray = []
+        const bids = []
+        const bidsSkipped = []
+        for (let time = 1 ; time <= times; time++){
+            await sleep(3000);
+            // const data = await readData();
+            const data = []
+            const trs = table.querySelectorAll("tr");
+            trs.forEach((tr,index) => {
+                const tds = tr.querySelectorAll("td");
+                const trr = []
+                for (td of tds){
+                    trr.push(td.innerText)
+                }
+                console.log(trr)
+                data.push(trr)
+            })
+            mainArray.push(data);
+            hoverOn(trs[trs.length -1])
+            // await shrinkIframe();
+            
+        }
+        for (let array of mainArray){
+            console.log("reading in main array");
+            for (data of array){
+                const bid = data[1]
+                if(bids.includes(bid)){
+                    // console.log("skipping bid = ",bid);
+                    bidsSkipped.push(bid);
+                }else{
+                    bids.push(bid);
+                    finalArray.push(data);
+                }
+            }
+        }
+        console.log("bids skipped ",bidsSkipped);
+        console.log("data processed",finalArray);
+        return finalArray;
+    }
+    const finalData = await processData();
+    await downloadFile(finalData);
+}
+async function emiProgram(){
+    function removeCategory(){
+        console.log("button pressed")
+        const trs = document.querySelectorAll("table tbody tr");
+        if(trs && trs.length > 0){
+            for (tr of trs){
+                const Category = tr.children[8];
+                if(Category && Category.innerText === "Non-Tie Up Scheme"){
+                    tr.remove();
+                }else{
+                    console.log("category not found");
+                }
+            }
+        }
+    }
+    function filterLtvBasedSchemes(){
+        const ltvValue = Number(document.querySelector("input#foreignInput-LTV").value);
+        if(ltvValue && ltvValue != ""){
+            console.log("button pressed")
+            const trs = document.querySelectorAll("table tbody tr");
+            if(trs && trs.length > 0){
+                for (tr of trs){
+                    const gT = Number(tr.children[3].innerText);
+                    const aE = Number(tr.children[4].innerText);
+                    
+                    let reqLtv = aE === 0 ? 100 : Math.abs((aE / gT -1 ) * 100)
+                    if(ltvValue < reqLtv){
+                        console.log("tr removed",tr.innerText);
+                        tr.remove();
+                    }else{
+                        console.log("tr remains",tr.innerText)
+                    }
+                    
+                }
+            }
+        }
+    }
+    function calculate(){
+        console.log("button pressed")
+        const trs = document.querySelectorAll("table tbody tr");
+        if(trs && trs.length > 0){
+            for (tr of trs){
+                const marginMoney = tr.children[1];
+                const loanDetails = tr.children[2];
+                const grossTenure = tr.children[3];
+                const advanceEmi = tr.children[4];
+                const netTenure = Number(grossTenure.innerText) - Number(advanceEmi.innerText)
+                const emiAmount = tr.children[5];
+                const DP = tr.children[7];
+                const emiProgram = document.querySelector("input#foreignInput-Program");
+                const array = loanDetails.innerText.split("-");
+                const dbd = loanDetails.innerText.split("DBD-")[1].split("\n")[0];
+                const invoiceAmount = array[array.length - 1]
+                const category = tr.children[8];
+                const PF = tr.children[9];
+                const limit = document.querySelector("input#foreignInput-Limit");
+                const total = tr.children[0];
+                if(Number(emiAmount.innerText) > Number(emiProgram.value)){
+                    emiAmount.innerText = emiProgram.value;
+                    marginMoney.innerText = emiProgram.value * Number(grossTenure.innerText);
+                    const dp = invoiceAmount - (Number(emiAmount.innerText) * netTenure) + Number(PF.innerText);
+                    DP.innerText = category.innerText.includes("Manufacturer") ? dp : dp + Number(dbd)
+                }else{
+                    const dp = invoiceAmount - (Number(emiAmount.innerText) * netTenure) + Number(PF.innerText);
+                    DP.innerText = category.innerText.includes("Manufacturer") ? dp : dp + Number(dbd)
+                    
+                }
+                if(Number(emiAmount.innerText) * netTenure > limit.value){
+                    emiAmount.innerText = limit.value / netTenure
+                    marginMoney.innerText = limit.value * Number(grossTenure.innerText);
+                    const dp = invoiceAmount - (Number(emiAmount.innerText) * netTenure) + Number(PF.innerText);
+                    DP.innerText = category.innerText.includes("Manufacturer") ? dp : dp + Number(dbd)
+                    
+                }else{
+                    console.log("emi amount is  less than limit");
+                }
+
+                total.innerText = (Number(emiAmount.innerText) * netTenure) + Number(DP.innerText);
+                
+            }
+        }
+    }
+    // calculate()
+    function addInputs(){
+        const divs = document.querySelectorAll("div.slds-grid.slds-wrap");
+        const div = divs[divs.length - 1]
+        div.children[1].style.display = "none"
+        for (let i = 1; i <= 3; i++){
+            input = document.createElement("input")
+            div.appendChild(input)
+            input.classList.add("CONTENT-JS-foreignInput")
+            if(i === 1){
+                input.id = `foreignInput-LTV`
+                input.placeholder = "LTV"
+                LTV = input
+            }else if(i === 2){
+                input.id = `foreignInput-Limit`
+                input.placeholder = "limit"
+                Limit = input
+            }else if(i === 3){
+                input.id = `foreignInput-Program`
+                input.placeholder = "Max Emi"
+                Program = input
+            }
+        }
+        for (let i = 1; i <= 3; i++){
+            btn = document.createElement("button");
+            div.appendChild(btn);
+            btn.classList.add("CONTENT-JS-foreignBtn");
+            if(i === 1){
+                btn.id = `foreignBtn-filterTieup`
+                btn.innerText = "filter Tie-up"
+                btn.addEventListener("click",removeCategory);
+            }else if(i === 2){
+                btn.id = `foreignBtn-filterLTV`
+                btn.innerText = "filter LTV"
+                btn.addEventListener("click",filterLtvBasedSchemes);
+            }else if(i === 3){
+                btn.id = `foreignBtn-calculate`
+                btn.innerText = "Calculate"
+                btn.addEventListener("click",calculate);
+            }
+        }
+    }
+    function changeHeaders(){
+        const ths = document.querySelectorAll("table thead th");
+        ths[0].innerText = "Total Amount"
+        ths[1].innerText = "Loan Amount"
+        ths[7].innerText = "Down Payment"
+        ths[0].scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+        })
+    }
+    addInputs();
+    changeHeaders();
+    
+}
 async function getCommand(){
     const oldCommandWall = document.querySelector("div#content-commandWall");
     if(oldCommandWall){
@@ -3786,6 +4028,10 @@ async function getCommand(){
                             div.remove();
                             fetchIframeData2();
                             break;
+                        case "83": case "D3":
+                            div.remove();
+                            fetchIframeData3();
+                            break;
                         case "96": case "RL":
                             div.remove();
                             location.reload();
@@ -3806,7 +4052,7 @@ async function getCommand(){
                             // insertIframe();
                             // messageToBackground("insertIframe","random")
                             // fillCategoryDetails2();
-                            
+                            emiProgram();
                             div.remove();
                             break;
                     }
@@ -3833,7 +4079,151 @@ function reloadHome(){
         },{once:true})
     })
 }
+function handleDiSorting(target,purpose){
+    iframe = document.querySelector("iframe")
+    table = iframe.contentDocument.querySelector("table")
+    trs = table.querySelectorAll("tr");
+    data = []
+    trs.forEach((tr,index) => {
+        if(index === 0 || index === (trs.length -1)){
+            // console.log("skipped ",tr)
+        }else{
+            if(target === "hi"){
+                data.push(Number(Array.from(tr.children)[1].innerText))
+            }else if(target === "files"){
+                data.push(Number(Array.from(tr.children)[2].innerText))
+            }else if(target === "penetration"){
+                data.push(Number(Array.from(tr.children)[3].innerText.split("%")[0]))
+            }
+        }
+    })
+    // console.log(data);
+    let newData
+    if(purpose === "ascend"){
+        newData = data.sort((a,b) => a-b)
+    }else if(purpose === "descend"){
+        newData = data.sort((a,b) => b-a)
+    }
 
+    newTrs = table.querySelectorAll("tr");
+    tbody = table.querySelector("tbody");
+    newData.forEach((val,index) => {
+        for(tr of newTrs){
+            let newTarget
+            if(target === "hi"){
+                newTarget = Number(Array.from(tr.children)[1].innerText)
+            }else if(target === "files"){
+                newTarget = Number(Array.from(tr.children)[2].innerText)
+            }else if(target === "penetration"){
+                newTarget = Number(Array.from(tr.children)[3].innerText.split("%")[0])
+            }  
+            if(val === newTarget){
+                tr.remove();
+                tbody.append(tr)
+                // console.log("remaining trs = ",newTrs);
+            }
+        }
+    })
+    newTotal = table.querySelectorAll("tr")[1];
+    tbody.append(newTotal)
+}
+function handleDiBtns(btn,id){
+    btn.addEventListener("click", (event)=> {
+        console.log("btn clicked")
+        if(id === "hi"){
+            if(event.target.innerText === "Ascend ⬇"){
+                handleDiSorting("hi","ascend");
+                event.target.innerText = "Descend ⬆"
+            }else if(event.target.innerText === "Descend ⬆"){
+                handleDiSorting("hi","descend");
+                event.target.innerText = "Ascend ⬇"
+            }
+            
+        }else if(id === "files"){
+            if(event.target.innerText === "Ascend ⬇"){
+                handleDiSorting("files","ascend");
+                event.target.innerText = "Descend ⬆"
+            }else if(event.target.innerText === "Descend ⬆"){
+                handleDiSorting("files","descend");
+                event.target.innerText = "Ascend ⬇"
+            }
+        }else if(id === "penetration"){
+            if(event.target.innerText === "Ascend ⬇"){
+                handleDiSorting("penetration","ascend");
+                event.target.innerText = "Descend ⬆"
+            }else if(event.target.innerText === "Descend ⬆"){
+                handleDiSorting("penetration","descend");
+                event.target.innerText = "Ascend ⬇"
+            }
+        }
+    })
+}
+function addLiElements(ul,iframe){
+    return new Promise((resolve,reject) => {
+        fetch(chrome.runtime.getURL("message.html"))
+        .then((response) => response.text())
+        .then((html) => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, "text/html");
+
+            const elements = doc.querySelectorAll("li.contentJS-diReport");
+            ul = ul ? ul : iframe.contentDocument.querySelector("div.metrics-widget ul")
+            if (elements) {
+                for (let element of elements){
+                    ul.append(element);
+                    handleDiBtns(element.children[1].children[0],element.id)
+                }
+                resolve({
+                    result:"success"
+                })
+            } else {
+                reject({
+                    result:"failed"
+                })
+                console.error("Specific element not found in the HTML file.");
+            }
+        })
+        .catch((error) => console.error("Error loading message.html:", error));
+    })
+    
+};
+function waitForElementSingle(selector,timeout) {
+    return new Promise((resolve, reject) => {
+        // console.log("selector is : ",selector);
+        const startTime = Date.now();
+        const checkExist = setInterval(() => {
+            const element = document.querySelector("iframe").contentDocument.querySelector(selector);
+            if (element) {
+                clearInterval(checkExist);
+                // console.log("waitForElement | element found : ",element);
+                resolve(element);
+            } else if (Date.now() - startTime > timeout) {
+                clearInterval(checkExist);
+                reject(new Error(`Element not found: ${selector}`));
+            }   
+        }, 100); // Check every 100ms
+    });
+};
+async function handleDiReport(){
+    console.log("handling Di report");
+    let iframe = await waitForElement("iframe",10000);
+    console.log(iframe);
+    const ul =  await waitForElementSingle("div.metrics-widget ul",10000)
+    const li = iframe[0].contentDocument.querySelector("li.contentJS-diReport");
+    if(li){
+        console.log("li already there");
+    }else{
+        if(ul){
+            await addLiElements(ul,iframe[0]);
+        }else{
+            iframe[0].addEventListener("load", async () => {
+                console.log("iframe content loaded");
+                const ul = iframe[0].contentDocument.querySelector("div.metrics-widget ul");
+                await addLiElements(ul,iframe[0]);
+            })
+        }
+    }
+}
 reloadHome();
 chrome.runtime.onMessage.addListener((request,sender, sendResponse) => {
     console.log("content recieved message : ",request)
@@ -3850,8 +4240,8 @@ chrome.runtime.onMessage.addListener((request,sender, sendResponse) => {
         getCommand();
         sendResponse({ status: 'Function invoked successfully' });
     }else if(request.action === "fetchData"){
-        // readQr("command");
-        assetValidation()
+        readQr("command");
+        // assetValidation()
         sendResponse({ status: 'Function invoked successfully' });
     }else if(request.action === "searchCustomer"){
         // checkMessenger("you are searching for new customer")
@@ -3931,6 +4321,8 @@ chrome.runtime.onMessage.addListener((request,sender, sendResponse) => {
         responsiveSubmit(request.type,request.stage);
     }else if(request.action === "getTabCount"){
         getTabCount();
+    }else if(request.action === "di-report"){
+        handleDiReport();
     }
 })
 // async function assetValidation(){
