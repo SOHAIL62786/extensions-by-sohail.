@@ -1053,7 +1053,6 @@ async function decodeQR(message) {
       }).then(response => {
         chrome.tabs.create({ url: response.url }).then(async tab => {
           const tabid = tab.id
-          
           messageToContentManyTimes({
             action:"enterPassword",
             password:message.password

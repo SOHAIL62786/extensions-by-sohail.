@@ -223,3 +223,47 @@ button.contentJS-buttons:hover{
 .ContentJS-DisplayNone{
     display: none;
 }
+div.tableDiv-contentJS{
+    position: fixed;
+    width: 99%;
+    height: 99%;
+    background-color: lightgrey;
+    opacity: 90%;
+    z-index: 100;
+    top: 30px;
+    bottom: 50%;
+    left: 50%;
+    right: 50%;
+    /* width: 10rem; */
+    transform: translate(-50%, -0);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* gap: 10vh; */
+    font-weight: 600;
+    font-family: 'Montserrat';
+}
+div.tableDiv-contentJS div.closeTableDiv{
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 20px;
+    cursor: pointer;
+
+}
+div.tableDiv-contentJS div.closeTableDiv:hover{
+    font-size: 25px;
+}
+div.tableDiv-contentJS table{
+    width: 90%;
+    height: 90%;
+    border: 2px solid white;
+    text-align: center;
+    border-radius: 10px;
+}
+div.tableDiv-contentJS table td{
+    width: fit-content;
+    border: 2px solid white;
+    text-align: center;
+    border-radius: 10px;
+}

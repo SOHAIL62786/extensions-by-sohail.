@@ -86,7 +86,7 @@ function getLocalData(left){
         }
       })
     })
-  }
+}
 function showMessage(message, time){
     const messageContainer = document.querySelector("div.contentJS-innermessageContainer")
     const span = document.createElement("span");
@@ -3268,7 +3268,7 @@ function handleResponseOnRequests(approval){
         console.log("qr already readed doing nothing about it");
     }
 }
-function addCommandWall(){
+function addCommandWall(selector){
     return new Promise((resolve,reject) => {
         fetch(chrome.runtime.getURL("message.html"))
         .then((response) => response.text())
@@ -3276,7 +3276,7 @@ function addCommandWall(){
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, "text/html");
 
-            specificElement = doc.querySelector("div#content-commandWall"); 
+            specificElement = doc.querySelector(selector); 
             if (specificElement) {
                 document.body.append(specificElement);
                 resolve({
@@ -3938,12 +3938,55 @@ async function emiProgram(){
     changeHeaders();
     
 }
+async function summarizeReport(){
+    const iframe = document.querySelector("iframe")
+    const table = iframe.contentDocument.querySelector("table.data-grid-full-table.data-grid-table")
+    const trs = table.querySelectorAll("tr");
+    const data = []
+    const request = await addCommandWall("div.tableDiv-contentJS");
+    if(request.result === "success"){
+        const table = document.querySelector("div.tableDiv-contentJS table");
+        const close = document.querySelector("div.tableDiv-contentJS div.closeTableDiv");
+        const wall = document.querySelector("div.tableDiv-contentJS");
+        if(close && wall){
+            close.addEventListener("click",() => {
+                wall.remove();
+            })
+        }
+        for (tr of trs){
+            const newTr = document.createElement("tr");
+            const innerdata = []
+            const tds = tr.childNodes
+            tds.forEach((td,index) => {
+                if(index === 1){
+                    console.log("skip")
+                }else{
+                    let value
+                    if(index === 0){
+                        value = td.innerText.split("\n")[1]
+                    }else{
+                        value = td.innerText
+                    }
+                    const newtd = document.createElement("td");
+                    newTr.append(newtd)
+                    newtd.innerText = value
+                    innerdata.push(value)
+                }
+                
+            })
+            data.push(innerdata)
+            table.append(newTr)
+        }
+        console.log(data);
+    }
+    
+}
 async function getCommand(){
     const oldCommandWall = document.querySelector("div#content-commandWall");
     if(oldCommandWall){
         oldCommandWall.remove()
     }else{
-        const request = await addCommandWall();
+        const request = await addCommandWall("div#content-commandWall");
         if(request.result === "success"){
             const div = document.querySelector("div#content-commandWall");
             const input = document.querySelector("input#content-commandInput");
@@ -4032,6 +4075,10 @@ async function getCommand(){
                             div.remove();
                             fetchIframeData3();
                             break;
+                        case "84": case "SR":
+                            div.remove();
+                            summarizeReport();
+                            break;
                         case "96": case "RL":
                             div.remove();
                             location.reload();
@@ -4079,114 +4126,114 @@ function reloadHome(){
         },{once:true})
     })
 }
-function handleDiSorting(target,purpose){
-    iframe = document.querySelector("iframe")
-    table = iframe.contentDocument.querySelector("table")
-    trs = table.querySelectorAll("tr");
-    data = []
-    trs.forEach((tr,index) => {
-        if(index === 0 || index === (trs.length -1)){
-            // console.log("skipped ",tr)
-        }else{
-            if(target === "hi"){
-                data.push(Number(Array.from(tr.children)[1].innerText))
-            }else if(target === "files"){
-                data.push(Number(Array.from(tr.children)[2].innerText))
-            }else if(target === "penetration"){
-                data.push(Number(Array.from(tr.children)[3].innerText.split("%")[0]))
-            }
-        }
-    })
-    // console.log(data);
-    let newData
-    if(purpose === "ascend"){
-        newData = data.sort((a,b) => a-b)
-    }else if(purpose === "descend"){
-        newData = data.sort((a,b) => b-a)
-    }
+// function handleDiSorting(target,purpose){
+//     iframe = document.querySelector("iframe")
+//     table = iframe.contentDocument.querySelector("table")
+//     trs = table.querySelectorAll("tr");
+//     data = []
+//     trs.forEach((tr,index) => {
+//         if(index === 0 || index === (trs.length -1)){
+//             // console.log("skipped ",tr)
+//         }else{
+//             if(target === "hi"){
+//                 data.push(Number(Array.from(tr.children)[1].innerText))
+//             }else if(target === "files"){
+//                 data.push(Number(Array.from(tr.children)[2].innerText))
+//             }else if(target === "penetration"){
+//                 data.push(Number(Array.from(tr.children)[3].innerText.split("%")[0]))
+//             }
+//         }
+//     })
+//     // console.log(data);
+//     let newData
+//     if(purpose === "ascend"){
+//         newData = data.sort((a,b) => a-b)
+//     }else if(purpose === "descend"){
+//         newData = data.sort((a,b) => b-a)
+//     }
 
-    newTrs = table.querySelectorAll("tr");
-    tbody = table.querySelector("tbody");
-    newData.forEach((val,index) => {
-        for(tr of newTrs){
-            let newTarget
-            if(target === "hi"){
-                newTarget = Number(Array.from(tr.children)[1].innerText)
-            }else if(target === "files"){
-                newTarget = Number(Array.from(tr.children)[2].innerText)
-            }else if(target === "penetration"){
-                newTarget = Number(Array.from(tr.children)[3].innerText.split("%")[0])
-            }  
-            if(val === newTarget){
-                tr.remove();
-                tbody.append(tr)
-                // console.log("remaining trs = ",newTrs);
-            }
-        }
-    })
-    newTotal = table.querySelectorAll("tr")[1];
-    tbody.append(newTotal)
-}
-function handleDiBtns(btn,id){
-    btn.addEventListener("click", (event)=> {
-        console.log("btn clicked")
-        if(id === "hi"){
-            if(event.target.innerText === "Ascend ⬇"){
-                handleDiSorting("hi","ascend");
-                event.target.innerText = "Descend ⬆"
-            }else if(event.target.innerText === "Descend ⬆"){
-                handleDiSorting("hi","descend");
-                event.target.innerText = "Ascend ⬇"
-            }
+//     newTrs = table.querySelectorAll("tr");
+//     tbody = table.querySelector("tbody");
+//     newData.forEach((val,index) => {
+//         for(tr of newTrs){
+//             let newTarget
+//             if(target === "hi"){
+//                 newTarget = Number(Array.from(tr.children)[1].innerText)
+//             }else if(target === "files"){
+//                 newTarget = Number(Array.from(tr.children)[2].innerText)
+//             }else if(target === "penetration"){
+//                 newTarget = Number(Array.from(tr.children)[3].innerText.split("%")[0])
+//             }  
+//             if(val === newTarget){
+//                 tr.remove();
+//                 tbody.append(tr)
+//                 // console.log("remaining trs = ",newTrs);
+//             }
+//         }
+//     })
+//     newTotal = table.querySelectorAll("tr")[1];
+//     tbody.append(newTotal)
+// }
+// function handleDiBtns(btn,id){
+//     btn.addEventListener("click", (event)=> {
+//         console.log("btn clicked")
+//         if(id === "hi"){
+//             if(event.target.innerText === "Ascend ⬇"){
+//                 handleDiSorting("hi","ascend");
+//                 event.target.innerText = "Descend ⬆"
+//             }else if(event.target.innerText === "Descend ⬆"){
+//                 handleDiSorting("hi","descend");
+//                 event.target.innerText = "Ascend ⬇"
+//             }
             
-        }else if(id === "files"){
-            if(event.target.innerText === "Ascend ⬇"){
-                handleDiSorting("files","ascend");
-                event.target.innerText = "Descend ⬆"
-            }else if(event.target.innerText === "Descend ⬆"){
-                handleDiSorting("files","descend");
-                event.target.innerText = "Ascend ⬇"
-            }
-        }else if(id === "penetration"){
-            if(event.target.innerText === "Ascend ⬇"){
-                handleDiSorting("penetration","ascend");
-                event.target.innerText = "Descend ⬆"
-            }else if(event.target.innerText === "Descend ⬆"){
-                handleDiSorting("penetration","descend");
-                event.target.innerText = "Ascend ⬇"
-            }
-        }
-    })
-}
-function addLiElements(ul,iframe){
-    return new Promise((resolve,reject) => {
-        fetch(chrome.runtime.getURL("message.html"))
-        .then((response) => response.text())
-        .then((html) => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, "text/html");
+//         }else if(id === "files"){
+//             if(event.target.innerText === "Ascend ⬇"){
+//                 handleDiSorting("files","ascend");
+//                 event.target.innerText = "Descend ⬆"
+//             }else if(event.target.innerText === "Descend ⬆"){
+//                 handleDiSorting("files","descend");
+//                 event.target.innerText = "Ascend ⬇"
+//             }
+//         }else if(id === "penetration"){
+//             if(event.target.innerText === "Ascend ⬇"){
+//                 handleDiSorting("penetration","ascend");
+//                 event.target.innerText = "Descend ⬆"
+//             }else if(event.target.innerText === "Descend ⬆"){
+//                 handleDiSorting("penetration","descend");
+//                 event.target.innerText = "Ascend ⬇"
+//             }
+//         }
+//     })
+// }
+// function addLiElements(ul,iframe){
+//     return new Promise((resolve,reject) => {
+//         fetch(chrome.runtime.getURL("message.html"))
+//         .then((response) => response.text())
+//         .then((html) => {
+//             const parser = new DOMParser();
+//             const doc = parser.parseFromString(html, "text/html");
 
-            const elements = doc.querySelectorAll("li.contentJS-diReport");
-            ul = ul ? ul : iframe.contentDocument.querySelector("div.metrics-widget ul")
-            if (elements) {
-                for (let element of elements){
-                    ul.append(element);
-                    handleDiBtns(element.children[1].children[0],element.id)
-                }
-                resolve({
-                    result:"success"
-                })
-            } else {
-                reject({
-                    result:"failed"
-                })
-                console.error("Specific element not found in the HTML file.");
-            }
-        })
-        .catch((error) => console.error("Error loading message.html:", error));
-    })
+//             const elements = doc.querySelectorAll("li.contentJS-diReport");
+//             ul = ul ? ul : iframe.contentDocument.querySelector("div.metrics-widget ul")
+//             if (elements) {
+//                 for (let element of elements){
+//                     ul.append(element);
+//                     handleDiBtns(element.children[1].children[0],element.id)
+//                 }
+//                 resolve({
+//                     result:"success"
+//                 })
+//             } else {
+//                 reject({
+//                     result:"failed"
+//                 })
+//                 console.error("Specific element not found in the HTML file.");
+//             }
+//         })
+//         .catch((error) => console.error("Error loading message.html:", error));
+//     })
     
-};
+// };
 function waitForElementSingle(selector,timeout) {
     return new Promise((resolve, reject) => {
         // console.log("selector is : ",selector);
@@ -4204,25 +4251,61 @@ function waitForElementSingle(selector,timeout) {
         }, 100); // Check every 100ms
     });
 };
+function convertBtns(){
+    iframe = document.querySelector("iframe")
+    table = iframe.contentDocument.querySelector("table.data-grid-full-table.data-grid-table")
+    trs = table.querySelectorAll("tr");
+    trs[0].childNodes.forEach((element,index) => {
+        if(index != 0){
+            element.children[0].style.width = "fit-content"
+            element.children[0].style.padding = "0px 10px 0px 0px"
+            element.children[0].style.cursor = "pointer"
+            element.addEventListener("click",(event) => {
+                console.dir("event triggered",event.target);
+                data = []
+                trs.forEach((tr,ind) => {
+                    if(ind === 0 || ind === (trs.length -1)){
+                        // console.log("skipped ",tr)
+                    }else{
+                        data.push(Number(tr.childNodes[index].innerText.split("%")[0]))
+                    }
+                })
+                let newData
+                const purpose = event.target.innerText
+                console.log("purpose is ",purpose);
+                if(purpose.includes("⬇")){
+                    newData = data.sort((a,b) => a-b);
+                    event.target.innerText = purpose.split("⬇")[0].concat(" ","⬆")
+                }else if(purpose.includes("⬆")){
+                    newData = data.sort((a,b) => b-a);
+                    event.target.innerText = purpose.split("⬆")[0].concat(" ","⬇")
+                }else{
+                    newData = data.sort((a,b) => a-b);
+                    event.target.innerText = purpose.split("⬇")[0].concat(" ","⬆")
+                    event.target.pare
+                }
+                newTrs = table.querySelectorAll("tr");
+                tbody = table.querySelector("tbody");
+                newData.forEach((val) => {
+                    for(tr of newTrs){
+                        let newTarget = Number(tr.childNodes[index].innerText.split("%")[0])
+                        if(val === newTarget){
+                            tr.remove();
+                            tbody.append(tr)
+                        }
+                    }
+                })
+                newTotal = table.querySelectorAll("tr")[1];
+                tbody.append(newTotal)
+            })
+        }
+    });
+}
 async function handleDiReport(){
     console.log("handling Di report");
     let iframe = await waitForElement("iframe",10000);
-    console.log(iframe);
-    const ul =  await waitForElementSingle("div.metrics-widget ul",10000)
-    const li = iframe[0].contentDocument.querySelector("li.contentJS-diReport");
-    if(li){
-        console.log("li already there");
-    }else{
-        if(ul){
-            await addLiElements(ul,iframe[0]);
-        }else{
-            iframe[0].addEventListener("load", async () => {
-                console.log("iframe content loaded");
-                const ul = iframe[0].contentDocument.querySelector("div.metrics-widget ul");
-                await addLiElements(ul,iframe[0]);
-            })
-        }
-    }
+    let table = await waitForElementSingle("table.data-grid-full-table.data-grid-table",10000);
+    convertBtns()
 }
 reloadHome();
 chrome.runtime.onMessage.addListener((request,sender, sendResponse) => {
