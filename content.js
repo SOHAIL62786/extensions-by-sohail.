@@ -4274,14 +4274,16 @@ function convertBtns(){
             element.children[0].style.padding = "0px 10px 0px 0px"
             element.children[0].style.cursor = "pointer"
             element.addEventListener("click",(event) => {
-                console.dir("event triggered",event.target);
+                console.log("event triggered",event.target);
                 data = []
                 trs.forEach((tr,ind) => {
                     if(ind === 0 || ind === (trs.length -1)){
                         // console.log("skipped ",tr)
                     }else{
-                        
-                        data.push(Number(tr.childNodes[index].innerText.split("%")[0]))
+                        const target = tr.childNodes[index].innerText
+                        console.log("target is",target)
+                        let newTarget = Number(target.replace(/[^0-9.]/g,''))
+                        data.push(newTarget)
                     }
                 })
                 let newData
@@ -4296,13 +4298,14 @@ function convertBtns(){
                 }else{
                     newData = data.sort((a,b) => a-b);
                     event.target.innerText = purpose.split("⬇")[0].concat(" ","⬆")
-                    event.target.pare
+                    
                 }
                 newTrs = table.querySelectorAll("tr");
                 tbody = table.querySelector("tbody");
                 newData.forEach((val) => {
                     for(tr of newTrs){
-                        let newTarget = Number(tr.childNodes[index].innerText.split("%")[0])
+                        const targetText = tr.childNodes[index].innerText
+                        let newTarget = Number(targetText.replace(/[^0-9.]/g,''))
                         if(val === newTarget){
                             tr.remove();
                             tbody.append(tr)
