@@ -3981,6 +3981,15 @@ async function summarizeReport(){
     }
     
 }
+async function changeReason(string){
+    const textAreas = document.querySelectorAll("textarea[name ='otherDetails']");
+    if(textAreas && textAreas.length > 0){
+        if(string === "phoneLocking"){
+            textAreas[1].value = "Emandate Lock + Phone Lock";
+        }
+        
+    }
+}
 async function getCommand(){
     const oldCommandWall = document.querySelector("div#content-commandWall");
     if(oldCommandWall){
@@ -4062,6 +4071,10 @@ async function getCommand(){
                         case "20": case "KVS": case "ETBS":
                             div.remove();
                             responsiveSubmit("ETB",2);
+                            break;
+                        case "21": case "PL":
+                            div.remove();
+                            changeReason("phoneLocking");
                             break;
                         case "80": case "DD":
                             div.remove();
@@ -4267,6 +4280,7 @@ function convertBtns(){
                     if(ind === 0 || ind === (trs.length -1)){
                         // console.log("skipped ",tr)
                     }else{
+                        
                         data.push(Number(tr.childNodes[index].innerText.split("%")[0]))
                     }
                 })
