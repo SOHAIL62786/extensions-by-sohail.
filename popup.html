@@ -9,45 +9,63 @@
   
   <div class="main">
     <header>
-      <div class="outerHeader">
-        <span id="home" class="">Home</span>
-      </div>
-      <div class="outerHeader inlineHeader">
-        <span id="loginData" class="active">Login Data</span>
-      </div>
-      <div class="outerHeader permissions">
-        <span id="permissions" >Permissions</span>
-      </div>
+        <div class="outerHeader">
+            <span id="home" class="">Home</span>
+        </div>
+        <div class="outerHeader inlineHeader">
+            <span id="loginData" class="active">Login Data</span>
+        </div>
+        <div class="outerHeader adminExclusive">
+            <span id="searchData" class="">Search Data</span>
+        </div>
+        <div class="outerHeader permissions">
+            <span id="permissions" >Permissions</span>
+        </div>
     </header>
     <div class="mainButtonsArea">
-      <div class="buttonArea loginData pages" style="width: 93%;">
-        <div class="dateInputs">
-          <div class="fromDiv">
-            <label class="date after displayNone" for="dateStart">From</label>
-            <input class = "date before" type="date" id="dateStart">
-          </div>
-          <div class="toDiv">
-            <label class = "date after displayNone" for="dateEnd">To</label>
-            <input class ="date after displayNone" type="date" id="dateEnd" >
-          </div>
+        <div class="buttonArea loginData" style="width: 93%;">
+            <div class="dateInputs">
+                <div class="fromDiv">
+                    <label class="date after displayNone" for="dateStart">From</label>
+                    <input class = "date before dateStart" type="date" id="dateStart">
+                </div>
+                <div class="toDiv">
+                    <label class = "date after displayNone" for="dateEnd">To</label>
+                    <input class ="date after displayNone" type="date" id="dateEnd" >
+                </div>
+            </div>
+            <button class="generateReport reportButtons" id="generateLoginData">Generate Report</button>
+            <div class="loading displayNone"></div>
+            <button class="fmFormat reportButtons displayNone">FM Format</button>
+            <button class="downloadLoginData reportButtons displayNone">
+                <i class="fa-solid fa-download"></i> .xlsx</button>
+            <button class="delete reportButtons displayNone fontAwesomeBtns" ><i class="fa-solid fa-trash" style="color: #ff0000;"></i></button>
+            <button class="edit reportButtons fontAwesomeBtns displayNone"><i class="fa-solid fa-pen-to-square"style="color: #023e8a;"></i></button>
+            <input type="text" class="reportButtons displayNone">
+            <button class="saveLoginData reportButtons displayNone">Save</button>
+            <div class="qrScansDisplay">
+                <i class="fa-duotone fa-solid fa-qrcode"></i>
+                <div class="flex">
+                    <span id="qrScansCount">0</span>
+                </div>
+            </div>
         </div>
-        <button class="generateReport reportButtons">Generate Report</button>
-        <div class="loading displayNone"></div>
-        <button class="fmFormat reportButtons displayNone">FM Format</button>
-        <button class="downloadLoginData reportButtons displayNone">
-          <i class="fa-solid fa-download"></i> .xlsx</button>
-        <button class="delete reportButtons displayNone fontAwesomeBtns" ><i class="fa-solid fa-trash" style="color: #ff0000;"></i></button>
-        <button class="edit reportButtons fontAwesomeBtns displayNone"><i class="fa-solid fa-pen-to-square"style="color: #023e8a;"></i></button>
-        <input type="text" class="reportButtons displayNone">
-        <button class="saveLoginData reportButtons displayNone">Save</button>
-        <div class="qrScansDisplay">
-          <i class="fa-duotone fa-solid fa-qrcode"></i>
-          <div class="flex">
-            <span id="qrScansCount">0</span>
-          </div>
+        <div class="buttonArea searchData displayNone" style="width: 93%;">
+            <div class="dateInputs">
+                <div class="fromDiv">
+                    <label class="date after displayNone" for="dateStart">From</label>
+                    <input class = "date before dateStart" type="date" id="dateStart">
+                </div>
+                <div class="toDiv">
+                    <label class = "date after displayNone" for="dateEnd">To</label>
+                    <input class ="date after displayNone" type="date" id="dateEnd" >
+                </div>
+            </div>
+            <button class="generateReport reportButtons" id="generateSearchData">Generate Report</button>
+            <div class="loading displayNone"></div>
+            <button class="downLoadSearchData reportButtons displayNone">
+            <i class="fa-solid fa-download"></i> .xlsx</button>
         </div>
-        
-      </div>
     </div>
     
     <div class="innerMain">
@@ -124,7 +142,6 @@
         </div>
       </div>
       <div id = "loginData" class="loginData pages">
-        
         <div id="loginTable">
           <table>
             <tr class="table-heading">
@@ -149,6 +166,31 @@
             </tr>
             <!-- <tr><td>1</td><td>14-02-2025</td><td>Rizwana Begum</td><td>7981016693</td><td>B301045692</td><td>Approved</td><td>Mobile</td><td>VIVO</td><td>Billed</td><td>Post Do</td><td>S-12345</td><td>-</td></tr> -->
           </table>
+        </div>
+      </div>
+      <div id="searchData" class="searchData pages displayNone">
+        <div id="searchTable">
+          <table>
+            <tr class="table-heading">
+              <th id="head1">S.No</th>
+              <th id="head2" class = "dateColumn">Date</th>
+              <th id="head3" class="timeColumn">Time</th>
+              <th id="head4">Mobile No</th>
+              <th id="head5">Customer Name</th>
+              <th id="head6">Customer Type</th>
+              <th id="head7">Aid</th>
+              <th id="head8">Fos Name</th>
+            </tr>
+            <!-- <tr><td>1</td><td>14-02-2025</td><td>19:16:10</td><td>7981016693</td><td>MOHAMMED ABDUL SOHAIL</td><td>NTB</td><td>A69371334</td><td>MOHAMMED SOHAIL</td> -->
+            
+          </table>
+        </div>
+        <div id="searchSummary">
+            <table>
+                <tr class="table-heading">
+                    
+                </tr>
+            </table>
         </div>
       </div>
       <div id="permissions" class="pages displayNone">

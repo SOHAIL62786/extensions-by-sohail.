@@ -53,6 +53,7 @@ header span:hover{
     color: aliceblue;
     opacity: 50%;
 }
+
 .active{
     background-color: #335c67;
     color: aliceblue;
@@ -64,6 +65,7 @@ div.pages{
     min-height: 100%;
     min-height: 100%;
 }
+
 .buttonArea{
     display: flex;
     align-items: center;
@@ -79,7 +81,7 @@ button.reportButtons{
     
     cursor: pointer;
 }
-div.loginData button.reportButtons{
+button.reportButtons{
     margin: 3.5px;
 }
 input.reportButtons{
@@ -167,6 +169,9 @@ table{
     border: 1px solid black;
     overflow-y: auto;
 }
+div#searchData table{
+    width: 100%;
+}
 div#loginData table{
     /* display: none; */
     min-width: 100%;
@@ -242,7 +247,10 @@ td{
     /* white-space: wrap; */
     text-align: center;
 }
-
+#searchTable td{
+    text-align: left;
+    padding-left: 6px;
+}
 form div{
     font-size: medium;
     margin: 0.5rem;

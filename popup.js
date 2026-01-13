@@ -1,8 +1,11 @@
 
-const generateReport = document.querySelector(".generateReport");
-const loadingDiv = document.querySelector("div.loading");
+const LgenerateReport = document.querySelector("button#generateLoginData");
+const SgenerateReport = document.querySelector("button#generateSearchData");
+const loadingDiv = document.querySelector("div.buttonArea.loginData div.loading");
+const SloadingDiv = document.querySelector("div.buttonArea.searchData div.loading");
 const loginTable = document.querySelector("#loginData table tbody");
-const dateInput = document.querySelector("input#dateStart")
+const dateInputs = document.querySelectorAll("input.dateStart");
+const loginTabledateInput = document.querySelector("div.loginData input#dateStart");
 const todayDate = new Date().toISOString().split('T')[0];
 const downloadBtn = document.querySelector("button.downloadLoginData");
 const fmFormat = document.querySelector("button.fmFormat");
@@ -22,7 +25,9 @@ function sleep(ms) {
 };
 
 let startDate = null
-dateInput.value = todayDate
+for (let dateInput of dateInputs){
+    dateInput.value = todayDate
+}
 document.querySelector("input[type='date']").setAttribute("max",todayDate);
 const assetCategories = {
     mobile : ["oppo", "vivo", "oneplus", "iphone", "redmi", "xiaomi","samsung-mobile","mobile"],
@@ -237,49 +242,53 @@ async function downloadData(){
     XLSX.writeFile(workbook,`loginData = ${dateStart} _ ${dateEnd}.xlsx`)
     downloadBtn.classList.add('displayNone');
 }
-dateInput.addEventListener("change",() => {
-    downloadBtn.classList.add("displayNone");
-    fmFormat.classList.add('displayNone');
-    const date = dateInput.value
-    if(date !== todayDate){
-        const otherInputs = document.querySelectorAll(".date.after");
-        otherInputs.forEach((input) => {
-            input.classList.remove("displayNone");
-        })
-        const dateEnd = document.querySelector("#dateEnd")
-        dateEnd.setAttribute("max",todayDate);
-        dateEnd.setAttribute("min",startDate);
-        dateInput.classList.remove("before");
-        dateEnd.addEventListener("change",() => {
-            downloadBtn.classList.add("displayNone");
-            fmFormat.classList.add('displayNone');
-        })
-    }else{
-        const otherInputs = document.querySelectorAll(".date.after");
-        otherInputs.forEach((input) => {
-            input.classList.add("displayNone");
-        })
-        dateInput.classList.add("before")
+for (let dateInput of dateInputs){
+    dateInput.addEventListener("change",() => {
+        downloadBtn.classList.add("displayNone");
+        fmFormat.classList.add('displayNone');
+        const date = dateInput.value
+        if(date !== todayDate){
+            const otherInputs = document.querySelectorAll(".date.after");
+            otherInputs.forEach((input) => {
+                input.classList.remove("displayNone");
+            })
+            const dateEnd = document.querySelector("#dateEnd")
+            dateEnd.setAttribute("max",todayDate);
+            dateEnd.setAttribute("min",startDate);
+            dateInput.classList.remove("before");
+            dateEnd.addEventListener("change",() => {
+                downloadBtn.classList.add("displayNone");
+                fmFormat.classList.add('displayNone');
+            })
+        }else{
+            const otherInputs = document.querySelectorAll(".date.after");
+            otherInputs.forEach((input) => {
+                input.classList.add("displayNone");
+                input.value = "";
+            })
+            dateInput.classList.add("before")
 
-    }
-})
-document.addEventListener("DOMContentLoaded",()=> {
-    getLocalData("DateToAid").then(data => {
-        const array = []
-        for(let date in data){
-            const newDate = date.split("_").reverse().join("-");
-            array.push(newDate)
-        }
-        array.sort((a,b) => new Date(a) - new Date(b));
-        // console.log("new array is ",array)
-        for(date of array){
-            startDate = date
-            // console.log(startDate);
-            dateInput.setAttribute("min",startDate)
-            break;
         }
     })
-})
+}
+
+// document.addEventListener("DOMContentLoaded",()=> {
+//     getLocalData("DateToAid").then(data => {
+//         const array = []
+//         for(let date in data){
+//             const newDate = date.split("_").reverse().join("-");
+//             array.push(newDate)
+//         }
+//         array.sort((a,b) => new Date(a) - new Date(b));
+//         // console.log("new array is ",array)
+//         for(date of array){
+//             startDate = date
+//             // console.log(startDate);
+//             loginTabledateInput.setAttribute("min",startDate)
+//             break;
+//         }
+//     })
+// })
 async function getAssetCategory(asset){
     const smallAsset = asset.toLowerCase()
     // console.log("getting asset category");
@@ -526,11 +535,11 @@ function getNickname(fosName){
         const data = await getLocalData("fosDetails");
         if(data){
             let found = false
-            for (entry in data){
+            for (let entry in data){
                 if(entry.toLowerCase().includes(fosName?.toLowerCase())){
                     found = true
                     resolve(data[entry].nickName);
-
+                    
                 }
             }
             if(found === false){
@@ -694,7 +703,7 @@ function changeDateFormat(date){
 async function showLoginDataSingleDate(){
     const dateData = await getLocalData("DateToAid");
     const loginData = await getLocalData("loginData");
-    const today = changeDateFormat(dateInput.value);
+    const today = changeDateFormat(loginTabledateInput.value);
     // const today = "14_02_2025"
     if(dateData && loginData){
         const todayAids = dateData[today];
@@ -1263,9 +1272,9 @@ chrome.runtime.onMessage.addListener((message,sender, sendResponse) => {
     }
     
 })
-generateReport.addEventListener("click",()=> {
+LgenerateReport.addEventListener("click",()=> {
     loadingDiv.classList.remove("displayNone")
-    document.querySelectorAll("tr.table-body").forEach((tr)=> {
+    document.querySelectorAll("div#loginTable tr.table-body").forEach((tr)=> {
         tr.remove();
     })
     deleteBtn.classList.add("displayNone");
@@ -1274,26 +1283,120 @@ generateReport.addEventListener("click",()=> {
     checkDates();
     // showLoginDataSingleDate();
 })
+function fetchDynamoData(dates){
+    return new Promise((resolve,reject) => {
+        console.log("function called with date ",dates)
+        fetch('https://byhmjk5fj7.execute-api.ap-south-1.amazonaws.com/demo',{
+            method: "GET",
+            headers: {
+            'Content-Type': 'application/json',
+            'x-date': dates
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Data added in db",data);
+            resolve(data)
+        })
+        .catch(console.error);
+    })
+    
+
+}
+function getSearchDates(){
+    let dates = []
+    const date1 = document.querySelector("div.buttonArea.searchData input#dateStart")?.value
+    const date2 = document.querySelector("div.buttonArea.searchData input#dateEnd")?.value
+    date1 ? dates.push(date1) : console.log("date 1 doesnot have value",date1)
+    date2 ? dates.push(date2) : console.log("date 2 doesnot have value",date2)
+    console.log(dates);
+    return dates.length > 1 ? dates.join(",") : dates[0];
+}
+
+async function generateSearchData(){
+    const searchTable = document.querySelector("div#searchTable table tbody");
+    const dates = getSearchDates()
+    const data = await fetchDynamoData(dates);
+    const tableFormat = ["sno","date","time","mobile","customerName","customerType","aid","fosName"]
+    if(data){
+        const Items = data.result.Items
+        console.log("we got data",Items);
+        let SN = 1
+        for (let item of Items){
+            const tr = document.createElement("tr");
+            tr.classList.add("table-body");
+            for (cell of tableFormat){
+                const td = document.createElement("td");
+                if(cell === "sno"){
+                    td.innerText = SN;
+                }else{
+                    td.innerText = item[cell];
+                }
+                tr.append(td);
+            }
+            searchTable.append(tr);
+            SN = SN + 1
+        }
+    }
+}
+
+function manageSfilters(){
+    const headers = document.querySelectorAll("div#searchTable tr.table-heading");
+    headers.forEach((header,index) => {
+        header.addEventListener("click", (event) => {
+            const targetIndex = Number(event.target.id.split("head")[1] - 1);
+            const trs = document.querySelectorAll("div#searchTable tr.table-body");
+            const tbody = document.querySelector("div#searchTable table tbody");
+            const data = []
+            trs.forEach((tr,index) => {
+                data.push(Number(tr.children[targetIndex].innerText) ? Number(tr.children[targetIndex].innerText) : tr.children[targetIndex].innerText)
+            })
+            const sortedData = data.sort();
+            const newTrs = document.querySelectorAll("div#searchTable tr.table-body");
+            for (D of sortedData){
+                newTrs.forEach((tr,index) => {
+                    D === (Number(tr.children[targetIndex].innerText) ? Number(tr.children[targetIndex].innerText) : tr.children[targetIndex].innerText) ? tbody.append(tr) : console.log("not matched")
+                })
+            }
+            
+        })
+    })
+}
+
+SgenerateReport.addEventListener("click",(event)=> {
+    SloadingDiv.classList.remove("displayNone");
+    document.querySelectorAll("div#searchTable tr.table-body").forEach((tr)=> {
+        tr.remove();
+    })
+    generateSearchData()
+    SloadingDiv.classList.add("displayNone");
+    manageSfilters();
+})
 downloadBtn.addEventListener("click",downloadData)
 function showPages(pageId,Page){
     const pages = document.querySelectorAll("div.innerMain div.pages");
+    const LD_ButtonArea = document.querySelector(`div.buttonArea.loginData`);
+    const SD_ButtonArea = document.querySelector(`div.buttonArea.searchData`);
+    console.log("LD_ButtonArea",LD_ButtonArea);
+    console.log("SD_ButtonArea",SD_ButtonArea);
     for (let page of pages){
         if(page.id === pageId){
             page.classList.remove("displayNone");
-            if(pageId === "loginData"){
-                document.querySelector(".mainButtonsArea div.loginData").classList.remove("displayNone");
-                
-            }else{
-                document.querySelector(".mainButtonsArea div.loginData").classList.add("displayNone");
-                
+            if(page.id === "loginData"){
+                LD_ButtonArea.classList.remove("displayNone");
+                console.log("displayNone removed from loginData")
+            }else if(page.id === "searchData"){
+                SD_ButtonArea.classList.remove("displayNone");
+                console.log("displayNone removed from searchData")
             }
         }else if(page.id !== pageId){
             page.classList.add("displayNone");
-            if(pageId === "loginData"){
-                document.querySelector(".mainButtonsArea div.loginData").classList.remove("displayNone");
-                
-            }else{
-                document.querySelector(".mainButtonsArea div.loginData").classList.add("displayNone");
+            if(page.id === "loginData"){
+                LD_ButtonArea.classList.add("displayNone");
+                console.log("displayNone added to loginData")
+            }else if(page.id === "searchData"){
+                SD_ButtonArea.classList.add("displayNone");
+                console.log("displayNone added to searchData")
             }
         }
     }
@@ -1411,15 +1514,6 @@ async function loadToggles(){
                         const invoiceNumberInput = document.querySelector("input#invoiceNumber-input");
                         if(invoiceNumberInput){
                             invoiceNumberInput.value = data.invoiceNumberSeries
-                        }
-                    }else if(toggle.id === "autoRefresh"){
-                        const refreshParameter = document.querySelector(`input#${data["refreshParameter"]["howOften"]}`);
-                        if(refreshParameter){
-                            console.log(refreshParameter)
-                            refreshParameter.checked = true
-                            loadRefreshParameters(refreshParameter.value);
-                        }else{
-                            console.log("refresh parametr not found");
                         }
                     }
                 }
@@ -1801,7 +1895,7 @@ async function deleteFDdata(){
 }
 async function fmData(){
     downloadBtn.classList.add("displayNone");
-    generateReport.classList.add("displayNone");
+    LgenerateReport.classList.add("displayNone");
     const table = document.querySelector("div#loginTable table tbody");
     const trs = document.querySelectorAll("div#loginTable table tbody tr.table-body");
     if(trs && trs.length > 0){
@@ -1999,7 +2093,7 @@ function displayActivePageElements(){
         case "home":
             saveFosDetailsBtn.classList.add("displayNone");
             FDdeleteBtn.classList.add("displayNone");
-            removeLoginDataTableBody()
+            removeLoginDataTableBody();
             removeFosTableBody();
             loadFosDetails();
             loadExtensionDetails();
@@ -2017,18 +2111,26 @@ function displayActivePageElements(){
 displayActivePageElements()
 const pagesBtn = document.querySelectorAll("header span")
 pagesBtn.forEach((page,inx) => {
-    page.addEventListener("click", (event) => {
-        showPages(page.id,page);
-        for(p of pagesBtn){
-            if(p.id === page.id){
-                p.classList.add("active");
-                p.parentNode.classList.add("inlineHeader");
-            }else{
-                p.classList.remove("active");
-                p.parentNode.classList.remove("inlineHeader");
+    page.addEventListener("click", async (event) => {
+        const nickName = await getNickname("MOHAMMED SOHAIL")
+        if(page.id === "searchData" && nickName !== "ABDUL"){
+            alert("Sorry, you are not admin, Cannot access this page");
+        }else{
+            showPages(page.id,page);
+            for(p of pagesBtn){
+                
+                if(p.id === page.id){
+                    console.log("p.id is ", p.id," and page.id is ",page.id);
+                    p.classList.add("active");
+                    p.parentNode.classList.add("inlineHeader");               
+                }else{
+                    p.classList.remove("active");
+                    p.parentNode.classList.remove("inlineHeader");
+                }
             }
+            displayActivePageElements()
         }
-        displayActivePageElements()
+        
     })
 })
 

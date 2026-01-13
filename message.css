@@ -189,7 +189,7 @@ button.contentJS-buttons:hover{
 .ContentJS-verticalMenuBar{
     position: fixed;
     left: 0px;
-    height: 50%;
+    height: 25%;
     width: 10px;
     top: 28%;
     background-color: blue;
@@ -199,7 +199,7 @@ button.contentJS-buttons:hover{
 }
 .ContentJS-verticalMenuBar:hover{
     top: 20%;
-    height: 60%;
+    height: 30%;
 }
 .CONTENT-JS-foreignInput{
     height: 30px;

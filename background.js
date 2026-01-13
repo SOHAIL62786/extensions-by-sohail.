@@ -1139,6 +1139,29 @@ function handleAutoAccountAggregator(message){
     }
   })
 }
+function addDynamoData(data){
+  fetch('https://byhmjk5fj7.execute-api.ap-south-1.amazonaws.com/demo',{
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then(data => console.log("Data added in db",data))
+  .catch(console.error);
+
+}
+// addDynamoData({
+//   date : "2026-01-05",
+//   time : "20:47:26",
+//   mobile : "8919558071",
+//   customerName : "Mohammed abdul sohail",
+//   customerType : "Ntb",
+//   aid : "A1234567",
+//   fosName : "MOHAMMED SOHAIL",
+//   transactionID : `2026-01-05-8919558071-MOHAMMED SOHAIL`
+// })
 function writeDataToDB(){
   console.log("sending data to db .....");
   fetch("https://64zo080cx7.execute-api.ap-northeast-3.amazonaws.com/write", {
@@ -1271,8 +1294,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sleep(10000).then(slp => {
         chrome.runtime.reload();
       })
-      
-      
     } else if(message.type === "reminder"){
       addReminders(message.text);
     } else if(message.type === "download"){
@@ -1283,6 +1304,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       handleAutoAccountAggregator(message.text);
     }else if(message.type === "insertIframe"){
       insertIframe();
+    }else if(message.type === "dynamoData"){
+      addDynamoData(message.text);
     }
   } else if (message.from === "popup") {
     if(message.type === "downloadRepo"){

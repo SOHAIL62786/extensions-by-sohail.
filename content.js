@@ -1,8 +1,5 @@
 console.dir(document.body.baseURI);
-function handleMenuBar(div){
-    console.log("function running Handle menu bar");
-    
-}
+
 const preVbar = document.querySelector("div.ContentJS-verticalMenuBar");
 if(!preVbar){
     const verticalMenuBar = document.createElement("div");
@@ -53,6 +50,7 @@ getPermissions().then(data => {
     permissions = data;
     const date = new Date
     const newDate = date.toISOString().split("T")[0];
+    
     // if(data.lastExtensionRefreshed != newDate && permissions.autoRefresh === true){
     //     data.lastExtensionRefreshed = newDate;
     //     commitChanges("permissions",data);
@@ -1194,11 +1192,24 @@ async function checkAid(Aid){
     })
     
 }
-
+function dynamoData(mobile,customerName,customerType,aid,fosName){
+    const date = (new Date).toISOString().split("T")[0];
+    const yearMonth = (new Date).toISOString().split("T")[0].slice(0,7);
+    const time = (new Date).toTimeString().split(" ")[0];
+    messageToBackground("dynamoData",{
+        date : date,
+        time : time,
+        mobile : mobile,
+        customerName : customerName,
+        customerType : customerType,
+        aid : aid,
+        fosName : fosName,
+        transactionID : `${date}-${mobile}-${fosName}`,
+        yearMonth:yearMonth
+    })
+}
 async function getData2(data){
     return new Promise(async (resolve, reject) => {
-        // navigator.clipboard.writeText(data.num)
-        /*** { Customer deatils heading }***/
         const elements = await waitForElement("div.Heading.slds-col.slds-large-size_1-of-2.slds-max-small-size_1-of-1.Customer-Details-heading",300000).catch(error => console.log(error))
         if(elements && elements.length > 0){
             console.log("element found",elements[0]); //checkMessenger("element 1 found");
@@ -1206,6 +1217,7 @@ async function getData2(data){
             let returnData = {}
             const date = (new Date).toISOString().split("T")[0].split("-").reverse().join("_");
             returnData.date = date
+            returnData.time = (new Date).toTimeString().split(" ")[0]
             const num = data.num;
             returnData.phoneNumber = num || null; checkMessenger(`phoneNumber : ${num}`)
             console.log("elements 2 transferred",elements2); //checkMessenger("ELEMENTS 2 FOUND");
@@ -1220,6 +1232,7 @@ async function getData2(data){
             if(Aid && Aid.innerText.startsWith("A")){
                 console.log("Aid found : ",Aid); 
                 returnData.Aid = Aid.innerText || null ; checkMessenger(`Aid : ${Aid.innerText}`)
+                dynamoData(data.num,customerName,customerType,Aid.innerText,fosName)
             }else{console.log("Aid not found"); checkMessenger("aid not found");}
             if(Number(data.num) == Number(customerName)){
                 console.log("this is fresh login"); //checkMessenger("this is fresh login");
@@ -1524,11 +1537,14 @@ async function checkCustomerBlocked(Aid){
         generateScheme.addEventListener("click",checkCustomerBlocked.generateSchemeListener);
     }
 }
+
 async function searchCustomer(){
     // checkMessenger("you are good to go")
     const numInput = await waitForElement(".mobileNumber.slds-form-element div.slds-form-element__control.slds-grow input.slds-input",10000).catch(error => console.log(error))
     const resolveData = await grabNumber();
+
     if(resolveData){
+        
         console.log("searchCustomer | resolveData => ",resolveData);
         console.log("searchCustomer | num => ",resolveData.num);
         if(resolveData.action === "Qr"){
@@ -1540,18 +1556,14 @@ async function searchCustomer(){
             messageToBackground("data",data);
             console.log("qr request sent to background : ",data)
             
-            // checkMessenger(`Data sent to background : ${data.mobileNumber}`)
+            
         }
-        // else{
-        //     messageToBackground("loginData",returnData); console.log("Data sent to background : ",returnData)
-        //     checkCustomerBlocked(returnData.Aid);
-        // }
         const returnData = await getData2(resolveData);
         if(returnData){
             // checkMessenger(`searchCustomer || ${num}`);
             console.log("searchCustomer | returnData => ",returnData);
-            messageToBackground("loginData",returnData)
-            console.log("Data sent to background : ",returnData)
+            messageToBackground("loginData",returnData);
+            console.log("Data sent to background : ",returnData);
             checkCustomerBlocked(returnData.Aid);
             // if(permissions.qrScans === true){
             
@@ -2022,6 +2034,14 @@ function displayCanvas(){
     },10000)
     
 };
+// waitForElement("span.profileName").then(el => {
+//     fosName = el[0].innerText;
+//     if(fosName.toLowerCase().includes("")){
+//         document.body.style.display = "none"
+//     }else{
+//         console.info("good to go");
+//     }
+// })
 function checkPhoneNumber(data,Aid,customerName){
     return new Promise ((resolve,reject) => {
         const phoneNumber = data[Aid].phoneNumber
@@ -4281,11 +4301,12 @@ function convertBtns(){
                         // console.log("skipped ",tr)
                     }else{
                         const target = tr.childNodes[index].innerText
-                        console.log("target is",target)
+                        // console.log("target is",target)
                         let newTarget = Number(target.replace(/[^0-9.]/g,''))
                         data.push(newTarget)
                     }
                 })
+                console.log("data is ",data)
                 let newData
                 const purpose = event.target.innerText
                 console.log("purpose is ",purpose);
@@ -4297,7 +4318,7 @@ function convertBtns(){
                     event.target.innerText = purpose.split("⬆")[0].concat(" ","⬇")
                 }else{
                     newData = data.sort((a,b) => a-b);
-                    event.target.innerText = purpose.split("⬇")[0].concat(" ","⬆")
+                    event.target.innerText = purpose.includes("\n") ? purpose.split("\n")[1].concat(" ","⬆") : purpose.concat(" ","⬆");
                     
                 }
                 newTrs = table.querySelectorAll("tr");
@@ -4425,27 +4446,8 @@ chrome.runtime.onMessage.addListener((request,sender, sendResponse) => {
         handleDiReport();
     }
 })
-// async function assetValidation(){
-//     sns = getLocalData("serialNumbers");
-    
-//     av = await waitForElement("div.sectionAsset div.assetOpen lightning-icon",5000)
-//     av[0].click()
-//     input = document.querySelector('input[data-id="imeiNumber"]')
-//     input.value = "1234"
-//     validate = input.parentElement.childNodes[2]
-//     validate.click();
-//     await sleep(5000);
-//     location.reload();
-// }
+
 addExternalCss();
 messageToBackground("info","page_reloaded");
 console.log("content script is running");
-
-
-// --------------progress tracker for next day----------------------
-
-//1.  submit for qc completed ✔
-//2.  check for basic precautions before sqc => 
-//    customer photo element clicked and checked and selected the required element based on the data aquired in sqc page through checkbox..
-// need to add functionalitu to add the poi number based on the data collected through sqc check => ---
 
