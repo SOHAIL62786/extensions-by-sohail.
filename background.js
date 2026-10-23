@@ -1000,6 +1000,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       insertIframe();
     }else if(message.type === "dynamoData"){
       addDynamoData(message.text);
+    }else if(message.type === "captureTab"){
+      // qrLink.js: screenshot of the visible tab, used for QR images the page does not let it read
+      chrome.tabs.captureVisibleTab(sender.tab ? sender.tab.windowId : null, { format: "png" }, (dataUrl) => {
+        sendResponse({ dataUrl: chrome.runtime.lastError ? null : dataUrl });
+      });
+      return true;
+    }else if(message.type === "openTab"){
+      // qrLink.js: open a decoded QR link in a new tab next to the current one
+      let allowed = false;
+      try {
+        const protocol = new URL(message.text?.url).protocol;
+        allowed = protocol === "http:" || protocol === "https:";
+      } catch (error) {
+        allowed = false;
+      }
+      if(!allowed){
+        sendResponse({ ok: false });
+        return;
+      }
+      const options = { url: message.text.url, active: true };
+      if(sender.tab){
+        options.index = sender.tab.index + 1;
+        options.openerTabId = sender.tab.id;
+      }
+      chrome.tabs.create(options, (tab) => {
+        sendResponse({ ok: Boolean(tab) && !chrome.runtime.lastError });
+      });
+      return true;
     }
   } else if (message.from === "popup") {
     if(message.type === "downloadRepo"){
