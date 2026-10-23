@@ -701,9 +701,9 @@ function changeDateFormat(date){
     return dateParts[2] + "_" + dateParts[1] + "_" + dateParts[0];
 }
 async function showLoginDataSingleDate(){
-    const dateData = await getLocalData("DateToAid");
+    const dateData = await getLocalData("DATETOAID");
     const loginData = await getLocalData("loginData");
-    const today = changeDateFormat(loginTabledateInput.value);
+    const today = loginTabledateInput.value
     // const today = "14_02_2025"
     if(dateData && loginData){
         const todayAids = dateData[today];
@@ -784,24 +784,23 @@ const send_Message = (TYPE,TEXT,TO) =>{
 //     return Dates
 // }
 async function getDatesArray(startDate,endDate){
-    const newStartDate = startDate.split("_").reverse().join("-");
-    const newEndDate = endDate.split("_").reverse().join("-");
+
     const newDates = [];
     const Dates = []
     let start = false
     let stop = false
-    const datesInData = await getLocalData("DateToAid");
+    const datesInData = await getLocalData("DATETOAID");
     for(let date in datesInData){
-        const newDate = date.split("_").reverse().join("-");
-        newDates.push(newDate);
+        newDates.push(date);
     }
+    
     newDates.sort((a,b) => new Date(a) - new Date(b))
     console.log("sorted dates = ",newDates);
     for(let date of newDates){
         
-        if(date === newStartDate){
+        if(date === startDate){
             start = true
-        }else if(date === newEndDate){
+        }else if(date === endDate){
             console.log("it is enddate")
             stop = true
             
@@ -817,14 +816,11 @@ async function getDatesArray(startDate,endDate){
     return Dates
 }
 async function getDatesArray2(startDate,endDate){
-    const newStartDate = startDate.split("_").reverse().join("-");
-    const newEndDate = endDate.split("_").reverse().join("-");
     const newDates = [];
     const Dates = []
-    const datesInData = await getLocalData("DateToAid");
+    const datesInData = await getLocalData("DATETOAID");
     for(let date in datesInData){
-        const newDate = date.split("_").reverse().join("-");
-        newDates.push(newDate);
+        newDates.push(date);
     }
     newDates.sort((a,b) => new Date(a) - new Date(b))
     console.log("sorted dates = ",newDates);
@@ -887,8 +883,8 @@ async function getDatesArray2(startDate,endDate){
         console.log("End date found, returning = ",dateFound);
         return dateFound
     }
-    const startDateRes = await findStart(newStartDate);
-    const endDateRes = await findEnd(newEndDate);
+    const startDateRes = await findStart(startDate);
+    const endDateRes = await findEnd(endDate);
     if(startDateRes && endDateRes){
         let start = false
         let stop = false
@@ -900,9 +896,9 @@ async function getDatesArray2(startDate,endDate){
                 stop = true
             }
             if(start === true && stop === false){
-                Dates.push(date.split("-").reverse().join("_"))
+                Dates.push(date)
             }else if(stop === true){
-                Dates.push(date.split("-").reverse().join("_"))
+                Dates.push(date)
                 break;
             }
         }
@@ -913,7 +909,8 @@ async function getDatesArray2(startDate,endDate){
 
 async function getDatesData(startDate,endDate){
     const datesArray = await getDatesArray2(startDate,endDate);
-    const dateData = await getLocalData("DateToAid");
+    console.log("datesArray is ",datesArray)
+    const dateData = await getLocalData("DATETOAID");
     const loginData = await getLocalData("loginData");
     if(dateData && loginData){
         let SNo = 0;
@@ -952,7 +949,7 @@ async function removeAidFromLoginData(Aid){
     })
 }
 async function removeAidFromDateData(date,Aid){
-    const oldData = await getLocalData("DateToAid");
+    const oldData = await getLocalData("DATETOAID");
     return new Promise ((resolve, reject) => {
       if(oldData){
         const dateSection = oldData[date];
@@ -962,7 +959,7 @@ async function removeAidFromDateData(date,Aid){
         dateSection.splice(index,1);
         console.log("after",dateSection)
         const changes = {...oldData, [date] : dateSection}
-        commitChanges("DateToAid",changes)
+        commitChanges("DATETOAID",changes)
         resolve("success")
       }else{
         reject("failed")
@@ -1232,23 +1229,23 @@ async function displayQrScans(date = new Date().toISOString().split("T")[0]){
 async function checkDates(){
     try{
         console.log("checking dates")
-        const startDate = changeDateFormat(document.querySelector("input#dateStart").value);
-        const endDate = changeDateFormat(document.querySelector("input#dateEnd").value);
+        const startDate = document.querySelector("input#dateStart").value;
+        const endDate = document.querySelector("input#dateEnd").value;
         console.log(startDate,endDate)
-        if(startDate.length <= 10 && endDate.length <= 10){
+        if(startDate && endDate){
             await getDatesData(startDate,endDate);
             await displayQrScansdates(startDate,endDate)
             await sleep(1000);
             snoToCheckBox();
             fmFormat.classList.add("displayNone");
-        }else if(startDate !== ""){
+        }else if(startDate && !endDate){
             console.log("going with start date")
             await showLoginDataSingleDate();
             await displayQrScans(startDate.split("_").reverse().join("-"));
             await sleep(1000);
             snoToCheckBox()
         }else{
-            console.log("something went wrong")
+            console.error("something went wrong")
         }
         showDeleteBtn()
         loadingDiv.classList.add("displayNone")

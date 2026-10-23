@@ -284,7 +284,7 @@ function getLocalData(left){
         commitChanges(left,{});
         resolve({})
       }else{
-        // console.log("data fetched : ", request[left]);
+        console.log("data fetched : ", request[left]);
         resolve(request[left]);
       }
     })
@@ -700,18 +700,15 @@ const urlCheck = () => {
     const url = tabs[0].url;
     const title = tabs[0].title
     const tabId = tabs[0].id
-    if (url.startsWith("https://bflconsumer.my.site.com/dealerRevamp")) {
+    if (url.startsWith("https://bflconsumer.my.site.com/dealercommunityreinvent")) {
+      messageToContent({ action: "checkReinventAutomationPagesList" });
       // messageToContent({ action: "trackSearchCustomer" });
-      if (url ==="https://bflconsumer.my.site.com/dealerRevamp/s/searchcustomer" || url.startsWith("https://bflconsumer.my.site.com/dealerRevamp/s/global-search") || url ==="https://bflconsumer.my.site.com/dealerRevamp/s/" || url.startsWith("https://bflconsumer.my.site.com/dealerRevamp/s/?t=")) {
-        console.log("you are searching new customer");
-        // location.reload();
-        messageToContent({ action: "searchCustomer" });
-      }else if(url === "https://bflconsumer.my.site.com/dealerRevamp/s/opportunity/Opportunity/Default"){
-        console.log("you are on opportunity page");
-        messageToContent({ action: "getOpportunityStages" });
-      }else if(url.includes("di-report")){
+      if(url.includes("di-report")){
         console.log("you are on opportunity page");
         messageToContent({ action: "di-report" });
+      }else if(url.includes("report")){
+        console.log("you are on report page");
+        messageToContent({ action: "handleReports" });
       }
       if (url.startsWith("https://bflconsumer.my.site.com/dealerRevamp/s/customer/")){
         console.log("you are viewing customer");
@@ -721,7 +718,6 @@ const urlCheck = () => {
         console.log("checking reminders on refresh => ",remindersOnRefresh);
         // conditions for submit for qc
         const con1 = remindersOnRefresh.submitForQc;
-        
        // conditions for submit for qc
         const RS_con1 = remindersOnRefresh.responsiveSubmit;
         const timeNow =  Date.now(); 
@@ -1219,7 +1215,84 @@ function insertIframe(){
   );
 
 }
+function changeBadge(action,Text){
+  if(action === "add"){
+    chrome.action.setBadgeText({ text: Text });
+    chrome.action.setBadgeBackgroundColor({ color: "#FF0000" });
+  }else{
+    chrome.action.setBadgeText({ text: "" });
+  }
+}
+async function waitForTabStatus(tabId,timeout = 10000){
+  return new Promise((resolve) => {
+    let isResolved = false;
 
+    function cleanup(result) {
+      if (isResolved) return;
+      isResolved = true;
+      chrome.tabs.onUpdated.removeListener(listener);
+      resolve(result);
+    }
+
+    function listener(updatedTabId, changeInfo, tab) {
+      if (updatedTabId === tabId && changeInfo.status === "complete") {
+        cleanup("complete");
+      }
+    }
+
+    // Add listener
+    chrome.tabs.onUpdated.addListener(listener);
+
+    // Timeout fallback (10 sec)
+    setTimeout(() => {
+      cleanup("timeout");
+    }, timeout);
+
+    // 🔥 Immediate check (important!)
+    chrome.tabs.get(tabId, (tab) => {
+      if (tab && tab.status === "complete") {
+        cleanup("complete");
+      }
+    });
+  });
+}
+let clusterExecution
+async function clusterSubmit(){
+  let tabIds = []
+  chrome.windows.getAll({populate:true}, async (windows) => {
+    console.log(windows);
+    
+    for (let i = 1; i <= 20; i++){
+      changeBadge("add",i.toString())
+      if(clusterExecution === false){break;}else{console.log("continue execution --> 1")}
+      for (let tab of windows[0].tabs){
+        if(clusterExecution === false){break;}else{console.log("continue execution --> 2")}
+        console.log(tab);
+        if(tab.title.includes("Opportunity:") && !tabIds.includes(tab.id)){
+          console.log("it is a opportunity page",tab.title);
+          chrome.tabs.update(tab.id,{active:true});
+          await sleep(1000);
+          const tabStatus = await waitForTabStatus(tab.id,5000);
+          if(tabStatus === "complete"){
+            const response = await messageToContent({action: "clusterExecution"});
+            if(response === "next"){
+              console.log("continue execution --> 3")
+            }else if(response === 'submitted'){
+              chrome.tabs.remove(tab.id);
+              tabIds.push(tab.id);
+            }else{
+              return
+            }
+          }
+          
+        }else{
+          console.log("its not",tab.title);
+        }
+      }
+    }
+    changeBadge("remove")
+  })
+}
 
 
 chrome.commands.onCommand.addListener((command) => {
@@ -1236,8 +1309,8 @@ chrome.commands.onCommand.addListener((command) => {
     messageToContent({ action: "getCommand" });
   } else if (command === "fetchData") {
     console.log("command passes : ", command);
-    messageToContent({ action: "fetchData" });
-    urlCheck();
+    // messageToContent({ action: "fetchData" });
+    clusterSubmit();
   }
 });
 // listen from content & popup script

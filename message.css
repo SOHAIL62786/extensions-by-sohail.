@@ -131,12 +131,18 @@ button.contentJS-buttons:hover{
 }
 /* end */
 #contentjs-phoneNumber-Counter{
-    position: absolute;
-    transform: translate(-110%, 120%);
     font-size: medium;
-    z-index: 10;
-    padding: 0px 1px;
+    padding: 1px 5px;
     border-radius: 5px;
+    width: 23px;
+    height: 32px;
+    justify-content: center;
+    align-items: center;
+
+}
+input.mobile-input{
+    font-size: 30px;
+    text-align: center;
 }
 #contentjs-phoneNumber-Counter-slider{
     display: block;
@@ -225,7 +231,8 @@ button.contentJS-buttons:hover{
 }
 div.tableDiv-contentJS{
     position: fixed;
-    width: 99%;
+    width: max-content;
+    padding: 0px 30px;
     height: 99%;
     background-color: lightgrey;
     opacity: 90%;
@@ -235,18 +242,19 @@ div.tableDiv-contentJS{
     left: 50%;
     right: 50%;
     /* width: 10rem; */
-    transform: translate(-50%, -0);
+    transform: translate(-50%, -4%);
     display: flex;
     justify-content: center;
     align-items: center;
     /* gap: 10vh; */
     font-weight: 600;
     font-family: 'Montserrat';
+    margin-top: 10px;
 }
 div.tableDiv-contentJS div.closeTableDiv{
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 5px;
+    right: 5px;
     font-size: 20px;
     cursor: pointer;
 
@@ -255,15 +263,54 @@ div.tableDiv-contentJS div.closeTableDiv:hover{
     font-size: 25px;
 }
 div.tableDiv-contentJS table{
-    width: 90%;
+    width: max-content;
     height: 90%;
-    border: 2px solid white;
+    border: 2px solid lightgrey;
     text-align: center;
     border-radius: 10px;
 }
-div.tableDiv-contentJS table td{
+div.tableDiv-contentJS table td,th{
     width: fit-content;
     border: 2px solid white;
     text-align: center;
     border-radius: 10px;
+    padding: 0px 10px;
+}
+div.tableDiv-contentJS table td.vert-head{
+    background-color: whitesmoke;
+}
+div.tableDiv-contentJS table td.table-value{
+    background-color: whitesmoke;
+}
+div.contentJS-listBoundary{
+    height: 78%;
+    max-width: fit-content;
+    min-width: 200px;
+    position: fixed;
+    display: flex;
+    justify-content: flex-start;
+    flex-direction: column;
+    gap: 5px;
+}
+div#contentJS-listBoundary-left{
+    top: 20%;
+    left: 11%;
+    z-index: 10;
+    overflow-y: scroll;
+}
+div#contentJS-listBoundary-right{
+    top: 20%;
+    right: 9%;
+}
+button.contentJS-listItem{
+    padding: 5px 10px;
+    display: flex;
+    text-align: center;
+    background-color: lightgrey;
+    border-radius: 5px;
+    width: 95%;
+    border: none;
+}
+button.contentJS-listItem:hover{
+    scale: 1.1;
 }

@@ -1372,7 +1372,18 @@ async function getData2(data){
         }
     })
 }
-
+async function createListenerEl(){
+    const removeListener = document.createElement("span");
+    removeListener.style.width = "30px";
+    removeListener.style.padding = "0px";
+    removeListener.style.border = "none";
+    removeListener.style.background = "none";
+    removeListener.style.fontSize = "18px";
+    removeListener.setAttribute("id","removeListener-content-js")
+    removeListener.innerText = "❌";
+    removeListener.style.cursor = "pointer"
+    return removeListener
+}
 function grabNumber(){
     return new Promise (async (resolve,reject) => {
         const removeListener = document.createElement("span");
@@ -1499,6 +1510,120 @@ function grabNumber(){
     
     
 }
+
+function grabNumber2(){
+    return new Promise (async (resolve,reject) => {
+        const removeListener = await createListenerEl()
+        const numInput = document.querySelector("input.mobile-input");
+        const searchBtn = document.querySelector("button.proceedBtn");
+        if(numInput && searchBtn){
+            if(permissions.qrScans === true){
+                numInput.style.backgroundColor = "#c7f9cc"
+            }else{
+                numInput.style.backgroundColor = "lightskyblue"
+            }
+            
+            const parent = searchBtn.parentNode;
+            const oldRemoveBtn = document.querySelector("span#removeListener-content-js");
+            if(oldRemoveBtn){
+                oldRemoveBtn.remove();
+                console.log("oldRemoveBtn removed");
+                checkMessenger("button removed",10,3000)
+            }
+            if(permissions.qrScans === true){
+                parent.prepend(removeListener);
+            }
+            console.log("numInput found",numInput);console.log("searchBtn found",searchBtn);//checkMessenger("numInput found")
+            async function listenSearchBtn(Action){
+                waitForElement("p.customerName",300000).then(element => {
+                    const num = numInput.value;
+                    try {
+                        navigator.clipboard.writeText(num);
+                        console.log(`Copied! ${num}`);
+                    } catch (e) {
+                        console.error('Clipboard failed:', e);
+                    }
+                    const resolveData = {
+                        "num": num,
+                        "searchBtn": searchBtn,
+                        "action": Action
+                    }
+                    console.log("searchBtn clicked"); checkMessenger("searchBtn clicked");
+                    if(num.length === 10){
+                        console.log("number captured : ",num);
+                        resolve(resolveData);
+                    }
+                })
+                
+            }
+                
+            if(!grabNumber.listener){
+                grabNumber.listener = () => listenSearchBtn("Qr");
+            }
+            if(!document.querySelector("span#contentjs-phoneNumber-Counter")){
+                checkMessenger("adding number counter",1,3000);
+                const cardInput = await waitForElement("div.mobile-input-container label span");
+                if(numInput && cardInput && cardInput.length > 0){
+                    const span = document.createElement("span");
+                    span.id = "contentjs-phoneNumber-Counter"
+                    cardInput[0].after(span);
+                    const span2 = document.createElement("span");
+                    span2.id = "contentjs-phoneNumber-Counter-slider"
+                    numInput.parentElement.append(span2)
+                    numInput.addEventListener("input",()=>{
+                        span.innerText = numInput.value.length
+                        span2.style.width = `${Number(numInput.value.length) * 10}%`
+                        if(numInput.value.length < 10){
+                            span.style.backgroundColor = "lightsalmon";
+                            span2.style.borderColor = "lightsalmon"
+                        }else if(numInput.value.length === 10){
+                            span.style.backgroundColor = "lightblue";
+                            span2.style.borderColor = "#085C97"
+                        }
+                    });
+                    numInput.addEventListener("keydown",(event) => {
+                        // console.log(event);
+                        if(event.key === "Enter"){
+                            console.log("phone number entered")
+                            // alert("phone number submitted");
+                            searchBtn.click();
+                        }
+                    })
+                    checkMessenger("number counter added",1,3000);
+                }else{
+                    console.log("nothing found");
+                }
+            }else{
+                console.log("number counter already exists");
+            }
+
+            searchBtn.removeEventListener("click",grabNumber.listener);
+            checkMessenger("Listener removed",10,3000);
+            searchBtn.addEventListener("click",grabNumber.listener);
+            checkMessenger("Listener added",10,3000);
+            removeListener.addEventListener("click", () => {
+                checkMessenger("Qr Otp Turned Off",10,2000);
+                searchBtn.removeEventListener("click", grabNumber.listener);
+                numInput.style.backgroundColor = "white"
+                removeListener.remove();
+                const num = numInput.value
+                searchBtn.addEventListener("click",() => {
+                    checkMessenger("submitBtn Clicked");
+
+                    listenSearchBtn("noQr");
+                    checkMessenger("No qr");
+                })
+            })
+        }else{
+            console.log("numInput not found")
+            checkMessenger("unable to capture data, please refresh the page",10,2000);
+            reject(new Error("input not found"))
+        }
+    
+    })
+    
+    
+}
 async function checkCustomerBlocked(Aid){
     if (!checkCustomerBlocked.proceedBtnListener){
         checkCustomerBlocked.proceedBtnListener = async () => {
@@ -1577,7 +1702,79 @@ async function searchCustomer(){
         }
     }
 }
+function waitForElementSingle(selector,timeout) {
+    return new Promise((resolve, reject) => {
+        // console.log("selector is : ",selector);
+        const startTime = Date.now();
+        const checkExist = setInterval(() => {
+            const element = document.querySelector(selector);
+            if (element) {
+                clearInterval(checkExist);
+                // console.log("waitForElement | element found : ",element);
+                resolve(element);
+            } else if (Date.now() - startTime > timeout) {
+                clearInterval(checkExist);
+                reject(new Error(`Element not found: ${selector}`));
+            }   
+        }, 100); // Check every 100ms
+    });
+};
+async function dataExtractStep1(data){
+    return new Promise(async (resolve, reject) => {
+        const element = await waitForElementSingle("p.customerName",300000).catch(error => console.log(error))
+        const returnData = {}
+        if(element){
+            console.log("element found",element);
+            const customerName = element.innerText
+            const Aid = element.nextSibling.innerText
+            const fosName = document.querySelector("span.profileName").innerText;
+            const customerType = customerName.includes("NTB") ? "NTB" : "ETB";
+            returnData.date = (new Date).toISOString().split("T")[0];
+            returnData.time = (new Date).toTimeString().split(" ")[0]
+            returnData.phoneNumber = data.num; 
+            returnData.fosName = fosName; 
+            returnData.customerName = customerName ; 
+            returnData.Aid = Aid; 
+            dynamoData(data.num,customerName,customerType,Aid,fosName)
+            resolve(returnData);
+        }
+    })
+}
+async function searchCustomer2(){
+    console.log("function called");
+    const numInput = await waitForElement("input.mobile-input",10000).catch(error => console.log(error))
+    const resolveData = await grabNumber2();
 
+    if(resolveData){
+        console.log("searchCustomer | resolveData => ",resolveData);
+        console.log("searchCustomer | num => ",resolveData.num);
+        if(resolveData.action === "Qr"){
+            const data = {
+                mobileNumber: resolveData.num,
+                action: "openQr",
+                url: permissions.qrUrl || "https://bfin.in/?3Q2VRXD8"
+            };
+            messageToBackground("data",data);
+            console.log("qr request sent to background : ",data)
+        }
+        const step1 = await dataExtractStep1(resolveData);
+        if(step1){
+            console.log("searchCustomer | returnData => ",step1);
+            // -------------- Date to Aid ----------------
+            const oldData1 = await getLocalData("DATETOAID");
+            if(oldData1){
+                const changes = {...oldData1, [step1.date] : step1.Aid}
+                commitChanges("DATETOAID",changes);
+            }
+            // -------------- Aid to Details --------------
+            const oldData2 = await getLocalData("AIDTODATA");
+            if(oldData2){
+                const changes = {...oldData2, [step1.Aid] : step1}
+                commitChanges("AIDTODATA",changes);
+            }
+        }
+    }
+}
 async function captureScreenshot(){
     async function logoutPage(){
         window.scrollTo({
@@ -2735,16 +2932,16 @@ function waitForElementDisappear(element,wait,timer){
             const interval = setInterval(() => {
                 const loader = document.querySelector(element);
                 if(loader){
-                    console.log("loader still visible"); checkMessenger("loader still visible")
+                    // console.log("loader still visible"); 
                 }else{
-                    console.log("loader gone"); checkMessenger("loader gone");
+                    console.log("loader gone"); 
                     clearInterval(interval);
                     resolve("success");
                 }
                 if(Date.now() < timeout){
                     console.log("check again");
                 }else{
-                    console.log("timeout loadeer not gone"); clearInterval(interval);
+                    console.log("timeout loader not gone"); clearInterval(interval);
                     reject("failed");
                 }
             },100)
@@ -3958,6 +4155,7 @@ async function emiProgram(){
     changeHeaders();
     
 }
+
 async function summarizeReport(){
     const iframe = document.querySelector("iframe")
     const table = iframe.contentDocument.querySelector("table.data-grid-full-table.data-grid-table")
@@ -3982,14 +4180,18 @@ async function summarizeReport(){
                     console.log("skip")
                 }else{
                     let value
+                    const newtd = document.createElement("td");
                     if(index === 0){
                         value = td.innerText.split("\n")[1]
+                        newtd.classList.add("vert-head")
                     }else{
                         value = td.innerText
+                        newtd.classList.add("table-value")
                     }
-                    const newtd = document.createElement("td");
-                    newTr.append(newtd)
+                    
+                    
                     newtd.innerText = value
+                    newTr.append(newtd)
                     innerdata.push(value)
                 }
                 
@@ -4001,6 +4203,18 @@ async function summarizeReport(){
     }
     
 }
+async function LYTY(){
+    const iframe = document.querySelector("iframe")
+    const table = iframe.contentDocument.querySelector("table.data-grid-full-table.data-grid-table")
+    const trs = table.querySelectorAll("tr");
+    for (tr of trs){
+        const header = tr[0];
+        const y2026 = Number(tr[3].innerText)
+        const y2025 = Number(tr[2].innerText)
+        const grBills = y2026 - y2025
+        const grPercent = `${((y2026 / y2025) -1 ) * 100}%`
+    }
+}
 async function changeReason(string){
     const textAreas = document.querySelectorAll("textarea[name ='otherDetails']");
     if(textAreas && textAreas.length > 0){
@@ -4008,6 +4222,21 @@ async function changeReason(string){
             textAreas[1].value = "Emandate Lock + Phone Lock";
         }
         
+    }
+}
+async function changeEligibility(task){
+    // Value = prompt("specify value")
+    trs = document.querySelectorAll("div.cdLinesDiv table tbody tr");
+    balanceLimit = document.querySelectorAll("div.Opportunity-Data div.slds-grid span.Customer-Data-Value")[3]
+    cdLTV = trs[0].children[1].children[0]
+    cdLimit = trs[1].children[1].children[0]
+    digitalLTV = trs[0].children[2].children[0]
+    digitalLimit = trs[1].children[2].children[0]
+    switch(task){
+        case "limitMatch":
+            cdLimit.innerText = balanceLimit.innerText
+            digitalLimit.innerText = balanceLimit.innerText
+        break;
     }
 }
 async function getCommand(){
@@ -4096,10 +4325,19 @@ async function getCommand(){
                             div.remove();
                             changeReason("phoneLocking");
                             break;
+                        case "22": case "LM":
+                            div.remove();
+                            changeEligibility("limitMatch")
+                            break;
+                        case "79": case "SD":
+                            div.remove();
+                            getschemedata();
+                            break;
                         case "80": case "DD":
                             div.remove();
                             fetchIframeData();
                             break;
+
                         case "81": case "D2":
                             div.remove();
                             fetchIframeData2();
@@ -4159,115 +4397,8 @@ function reloadHome(){
         },{once:true})
     })
 }
-// function handleDiSorting(target,purpose){
-//     iframe = document.querySelector("iframe")
-//     table = iframe.contentDocument.querySelector("table")
-//     trs = table.querySelectorAll("tr");
-//     data = []
-//     trs.forEach((tr,index) => {
-//         if(index === 0 || index === (trs.length -1)){
-//             // console.log("skipped ",tr)
-//         }else{
-//             if(target === "hi"){
-//                 data.push(Number(Array.from(tr.children)[1].innerText))
-//             }else if(target === "files"){
-//                 data.push(Number(Array.from(tr.children)[2].innerText))
-//             }else if(target === "penetration"){
-//                 data.push(Number(Array.from(tr.children)[3].innerText.split("%")[0]))
-//             }
-//         }
-//     })
-//     // console.log(data);
-//     let newData
-//     if(purpose === "ascend"){
-//         newData = data.sort((a,b) => a-b)
-//     }else if(purpose === "descend"){
-//         newData = data.sort((a,b) => b-a)
-//     }
 
-//     newTrs = table.querySelectorAll("tr");
-//     tbody = table.querySelector("tbody");
-//     newData.forEach((val,index) => {
-//         for(tr of newTrs){
-//             let newTarget
-//             if(target === "hi"){
-//                 newTarget = Number(Array.from(tr.children)[1].innerText)
-//             }else if(target === "files"){
-//                 newTarget = Number(Array.from(tr.children)[2].innerText)
-//             }else if(target === "penetration"){
-//                 newTarget = Number(Array.from(tr.children)[3].innerText.split("%")[0])
-//             }  
-//             if(val === newTarget){
-//                 tr.remove();
-//                 tbody.append(tr)
-//                 // console.log("remaining trs = ",newTrs);
-//             }
-//         }
-//     })
-//     newTotal = table.querySelectorAll("tr")[1];
-//     tbody.append(newTotal)
-// }
-// function handleDiBtns(btn,id){
-//     btn.addEventListener("click", (event)=> {
-//         console.log("btn clicked")
-//         if(id === "hi"){
-//             if(event.target.innerText === "Ascend ⬇"){
-//                 handleDiSorting("hi","ascend");
-//                 event.target.innerText = "Descend ⬆"
-//             }else if(event.target.innerText === "Descend ⬆"){
-//                 handleDiSorting("hi","descend");
-//                 event.target.innerText = "Ascend ⬇"
-//             }
-            
-//         }else if(id === "files"){
-//             if(event.target.innerText === "Ascend ⬇"){
-//                 handleDiSorting("files","ascend");
-//                 event.target.innerText = "Descend ⬆"
-//             }else if(event.target.innerText === "Descend ⬆"){
-//                 handleDiSorting("files","descend");
-//                 event.target.innerText = "Ascend ⬇"
-//             }
-//         }else if(id === "penetration"){
-//             if(event.target.innerText === "Ascend ⬇"){
-//                 handleDiSorting("penetration","ascend");
-//                 event.target.innerText = "Descend ⬆"
-//             }else if(event.target.innerText === "Descend ⬆"){
-//                 handleDiSorting("penetration","descend");
-//                 event.target.innerText = "Ascend ⬇"
-//             }
-//         }
-//     })
-// }
-// function addLiElements(ul,iframe){
-//     return new Promise((resolve,reject) => {
-//         fetch(chrome.runtime.getURL("message.html"))
-//         .then((response) => response.text())
-//         .then((html) => {
-//             const parser = new DOMParser();
-//             const doc = parser.parseFromString(html, "text/html");
-
-//             const elements = doc.querySelectorAll("li.contentJS-diReport");
-//             ul = ul ? ul : iframe.contentDocument.querySelector("div.metrics-widget ul")
-//             if (elements) {
-//                 for (let element of elements){
-//                     ul.append(element);
-//                     handleDiBtns(element.children[1].children[0],element.id)
-//                 }
-//                 resolve({
-//                     result:"success"
-//                 })
-//             } else {
-//                 reject({
-//                     result:"failed"
-//                 })
-//                 console.error("Specific element not found in the HTML file.");
-//             }
-//         })
-//         .catch((error) => console.error("Error loading message.html:", error));
-//     })
-    
-// };
-function waitForElementSingle(selector,timeout) {
+function waitForElementSinglewithiframe(selector,timeout) {
     return new Promise((resolve, reject) => {
         // console.log("selector is : ",selector);
         const startTime = Date.now();
@@ -4310,7 +4441,7 @@ function convertBtns(){
                 let newData
                 const purpose = event.target.innerText
                 console.log("purpose is ",purpose);
-                if(purpose.includes("⬇")){
+                if(purpose?.includes("⬇")){
                     newData = data.sort((a,b) => a-b);
                     event.target.innerText = purpose.split("⬇")[0].concat(" ","⬆")
                 }else if(purpose.includes("⬆")){
@@ -4333,24 +4464,379 @@ function convertBtns(){
                         }
                     }
                 })
-                newTotal = table.querySelectorAll("tr")[1];
+                const newTotal = Array.from(table.querySelectorAll("tr"))
+                    .find(tr => tr.textContent.includes("Total"));
                 tbody.append(newTotal)
+                const newHeader = Array.from(table.querySelectorAll("tr"))
+                    .find(tr => tr.textContent.includes("DME ID"));
+                tbody.prepend(newHeader);
             })
         }
     });
 }
+async function convertFinone(table){
+    ths = table.querySelectorAll("tbody tr th.data-grid-table-cell:not(.data-grid-header-cell)")
+    finOneCode = {
+        "547677" : "Salman Khan",
+        "646180" :  "MOHAMMED SOHAIL",
+        "10631407" : "Mohammed Mahraj",
+        "537737" : "MOHAMMED MUDASSIR",
+        "186798" : "Abdul Asif",
+        "697493" : "SAYYED ANWARHUSSEN",
+        "411720" : "MOHAMMED SADIQ",
+        "703651" : "MOHD UDDIN",
+        "688658" : "MANJETI PRASAD",
+        "437630" : "MOHD MOHSIN",
+        "606539" : "MOHAMMED QAZI",
+        "444888" : "Mohammed Hasan",
+        "188331" : "Rachakatla Raj",
+        "10574251" : "Yelchala Vijay",
+        "10699527" : "moosa",
+        "641904" : "Ayan",
+        "646568" : "imran"
+
+    }
+    for (th of ths){
+        finone = th.querySelectorAll("label")[1];
+        if(finone){
+            Name = finOneCode[finone?.innerText];
+            console.log(`${finone} : ${Name}`);
+            finone.innerText = Name ? Name : finone?.innerText
+        }else{
+            console.log("skipping for total")
+        }
+        
+    }
+}
 async function handleDiReport(){
     console.log("handling Di report");
     let iframe = await waitForElement("iframe",10000);
-    let table = await waitForElementSingle("table.data-grid-full-table.data-grid-table",10000);
-    convertBtns()
+    let table = await waitForElementSinglewithiframe("table.data-grid-full-table.data-grid-table",10000);
+    convertBtns();
+    convertFinone(table);
 }
-reloadHome();
-chrome.runtime.onMessage.addListener((request,sender, sendResponse) => {
+async function showData(data){
+    const request = await addCommandWall("div.tableDiv-contentJS");
+    if(request.result === "success"){
+        const table = document.querySelector("div.tableDiv-contentJS table");
+        const close = document.querySelector("div.tableDiv-contentJS div.closeTableDiv");
+        const wall = document.querySelector("div.tableDiv-contentJS");
+        if(close && wall){
+            close.addEventListener("click",() => {
+                wall.remove();
+            })
+        }
+        for (let D of data){
+            const tr = document.createElement("tr");
+            for (let d of D){
+                const td = document.createElement("td");
+                td.innerText = d
+                tr.append(td)
+            }
+            table.append(tr)
+        }
+        
+    }
+}
+async function getschemedata(){
+    const schemes = document.querySelectorAll("div.schemeBox");
+    const data = []
+    for (let scheme of schemes){
+        const ps = scheme.querySelectorAll("div p");
+        const d = []
+        for (let p of ps){
+            console.log(p.innerText);
+            switch (p.innerText){
+                case "Scheme Id":
+                case "Gross/Adv Tenor":
+                case "DownPayment":
+                case "Loan Amount":
+                case "EMI":
+                case "DBD":
+                case "Processing Fees":
+                    d.push(p.nextElementSibling.innerText)
+                    break;
+            }
+        }
+        console.log(d)
+        data.push(d)
+    }
+    console.log(data)
+    showData(data)
+}
+async function checkForErrors(errors){
+    return new Promise(async (resolve,reject) => {
+        const error = await waitForError("span.toast-title","",5000);
+        if(error){
+            console.log("error found",error)
+            for (let err in errors){
+                if(error.includes(err.toLowerCase())){
+                    switch(errors[err].action){
+                        case "stop":
+                            console.log("stopping the function");
+                            resolve("break");
+                            break;
+                        case "continue":
+                            console.log("continuing the execution");
+                            await sleep(1000)
+                            resolve("continue");
+                            break;
+                    }
+                }else{
+                    resolve("continue");
+                }
+            }
+        }
+    })
+}
+async function changPostDoPage(text){
+    const btn = document.querySelector("li.breadcrumb-item button");
+    btn.click();
+    waitForElementWithText("div.hamburger-menu div.menu-content div",text.toLowerCase(),5000).then(async element => {
+        console.log("element found",element);
+        // await sleep(500);
+        element.children[0].click();
+    }).catch(error => console.error(error));
+}
+async function clusterSubmit(){
+    return new Promise(async (resolve,reject) => {
+        const buttons = await waitForElement("button.proceedBtn.submit-button",5000);
+        if(buttons && buttons.length > 0){
+            let con = true
+            const condition = buttons.forEach(btn => { if(btn.disabled === false){con = false}})
+            if(con === false){
+                for(btn of buttons){
+                    if(btn.disabled === false){
+                        const bypass = document.querySelector("button.proceedBtn.bypass-button");
+                        if(bypass){
+                            bypass.click();
+                            resolve("next")
+                        }else{
+                            btn.click();
+                            resolve("next");
+                        }
+                    }
+                }
+            }
+        }else{
+            console.error("buttons not found");
+        }
+    })
+}
+async function checkConditions(){
+    return new Promise(async (resolve,reject) => {
+        if(document.querySelector("lightning-spinner")){
+            resolve('next');
+        }else if(document.querySelector("div.currentScreen")?.innerText === 'QC/DI Status'){
+            resolve('submitted');
+        }else if(document.querySelector("div.currentScreen")?.innerText !== 'Document Validate'){
+            changPostDoPage('Document Validate');
+            const result = await clusterSubmit();
+            resolve(result);
+        }else if(document.querySelector("div.currentScreen")?.innerText === 'Document Validate'){
+            const result = await clusterSubmit();
+            resolve(result);
+        }
+    })
+}
+async function submitFile(){
+    const possibleErrors = {
+        "The following documents have not been received": {action : "stop"},
+        "Please Check the mismatched fields!": {action: "continue"},
+        "internal server error{}": {action: "continue"}
+    }
+    const buttons = document.querySelectorAll("button.proceedBtn.submit-button");
+    if(buttons && buttons.length > 0){
+        let con = true
+        const condition = buttons.forEach(btn => { if(btn.disabled === false){con = false}})
+        for(let i = 0; i <= 10; i++){
+            let status = document.querySelector("div.currentScreen").innerText;
+            if(con === false && status != 'QC/DI Status'){
+                for(btn of buttons){
+                    if(btn.disabled === false){
+                        btn.click();
+                        await waitForElementDisappear("lightning-spinner",1000,100000);
+                        const bypass = document.querySelector("button.proceedBtn.bypass-button");
+                        if(bypass){
+                            bypass.click();
+                            break;
+                        }
+                        const result = await checkForErrors(possibleErrors)
+                        if(result === "break"){
+                            console.log("response recieved -> breaking the function");
+                            alert("check the error");
+                            return;
+                        }else if(result === "continue"){
+                            console.log("continuing the execution")
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+async function constantCheck(){
+    const status = document.querySelector("div.currentScreen").innerText;
+    waitForElementDisappear("lightning-spinner",1000,100000).then(loader => {
+        submitFile();
+    })
+}
+async function invoiceAutomation(btn){
+    if(btn){
+        console.log("btn found",btn)
+        btn.style.backgroundColor = "lightblue"
+        btn.style.padding = "0px 4px"
+        btn.addEventListener("click",async ()=>{
+            const invoiceBtn = await waitForElementWithText("div.hamburger-menu div.menu-content div","invoice",5000).catch(error => console.error(error));
+            invoiceBtn.addEventListener("click",async (event) => {
+                // const manualBtn = await waitForElementSingle("button.custom-button.manual-button",5000);
+                // manualBtn.click();
+                const dateEl = await waitForElementSingle("input.mobile-input[type='date']",5000);
+                dateEl.value = (new Date).toISOString().split('T')[0];
+                dateEl.dispatchEvent(new Event("input",{bubbles:true}))
+                dateEl.dispatchEvent(new Event("change",{bubbles:true}))
+                const invoiceEl = await waitForElementSingle("input.mobile-input[type='text']",5000);
+                invoiceEl.addEventListener("focus",(event) => {
+                    invoiceEl.value = "1227/26/S-"
+                })
+                invoiceEl.addEventListener("keydown", async (event) => {
+                    console.log(event);
+                    if(event.key === 'Enter'){
+                        const checkbox = await waitForElementSingle("span.slds-checkbox_faux",5000)
+                        checkbox.click();
+                        const proceedBtn = await waitForElementSingle("button.proceedBtn",5000)
+                        proceedBtn.click();
+                        
+                    }
+                })
+            })
+        },{once:true})
+    }else{
+        console.log("btn not found");
+    }
+}
+function handleListAutomation(event){
+    console.log("event triggered",event);
+    const btn = document.querySelector("li.breadcrumb-item button");
+    btn.click();
+    waitForElementWithText("div.hamburger-menu div.menu-content div",event.target.innerText.toLowerCase(),5000).then(async element => {
+        console.log("element found",element);
+        // await sleep(500);
+        element.children[0].click();
+    }).catch(error => console.error(error));
+}
+function addMenuListRight(list){
+    const listBoundaryright = document.createElement("div");
+    listBoundaryright.id = "contentJS-listBoundary-right"
+    listBoundaryright.classList.add("contentJS-listBoundary")
+    document.querySelector("div.cCenterPanel").append(listBoundaryright);
+    list.forEach(name => {
+        const span = document.createElement("button");
+        span.classList.add("contentJS-listItem");
+        span.innerText = name
+        listBoundaryright.append(span);
+        span.addEventListener("click",handleListAutomation)
+    })
+}
+function addMenuListleft(list){
+    console.log("adding menu list ==----->")
+    let listBoundaryleft = document.querySelector("div#contentJS-listBoundary-left")
+    if(!listBoundaryleft){
+        listBoundaryleft = document.createElement("div");
+        listBoundaryleft.id = "contentJS-listBoundary-left"
+        listBoundaryleft.classList.add("contentJS-listBoundary")
+        document.querySelector("div.cCenterPanel").append(listBoundaryleft);
+    }
+    for(name of list){
+        const span = document.createElement("button");
+        span.classList.add("contentJS-listItem");
+        span.innerText = name
+        listBoundaryleft.append(span);
+        span.addEventListener("click",handleListAutomation)
+    }
+    
+}
+function updateMenuList(){
+    console.log("updating menu list => ---------")
+    const myList = document.querySelectorAll("div.contentJS-listBoundary");
+    waitForElement("div.hamburger-menu div.menu-content div",5000).then(async elements => {
+        console.log("element found",elements);
+        if(myList.length != elements.length){
+            document.querySelectorAll("button.contentJS-listItem").forEach(button => {button.remove()})
+            for (el of elements){
+                const span = document.createElement("button");
+                span.classList.add("contentJS-listItem");
+                span.innerText = el.innerText
+                myList[0].append(span);
+                span.addEventListener("click",handleListAutomation)
+            }
+        }
+    },{once:true}).catch(error => console.error(error));
+}
+async function createMenuList(page){
+    console.log('function called')
+    const btn = await waitForElementSingle("li.breadcrumb-item button",5000);
+    
+    btn.addEventListener("click",updateMenuList)
+    const newStage = ["Home","Customer Search","App Status","Zip Code Verification","Product Selection","Income Declaration","KYC","POI","POA","Surrogate Details","Customer Detail Page","Additional Details","CKYC","Asset Cart"]
+    const doPrep = ["Cross Sell","EMI Card","Loan Summary","Postpone EMI","Upi Mandate","PAN Details","Rewards","Offers Details","GST Billing","Other Details","Document Library","Product Validation"];
+    const postDo = ["Do Details","Other Details","Agreement","Invoice","Document Library","Document Validate"]
+    switch(page){
+        case "opportunity": 
+            invoiceAutomation(btn);
+            addMenuListleft(doPrep);
+            addMenuListRight(postDo);
+            break;
+        case "customer":
+            addMenuListleft(newStage);
+            
+            break;
+    }
+    
+}
+
+// reloadHome();
+let lastUrl
+async function modifyReinventList(url = document.body.baseURI){
+    if (document.querySelector("div#contentJS-listBoundary-left") && lastUrl === url){
+        console.log("skipping list creation, list already there");
+        return
+    }else{
+        lastUrl = url
+        console.log("list not found")
+    }
+    const keys = {
+        search : "/dealercommunityreinvent/s/searchmain",
+        defaultOpportunities : "/dealercommunityreinvent/s/opportunity/Opportunity/Default",
+        customer : "/dealercommunityreinvent/s/customer/",
+        opportunity : "/dealercommunityreinvent/s/opportunity/"
+    }
+    const reinventAutomationPagesList = {
+        [keys.search] : {function: searchCustomer2, argument: [], condition: url.includes(keys.search)}, // search page
+        // "/dealercommunityreinvent/s/opportunity/Opportunity/Default" : {function: none, argument: none}, // opportunity list
+        [keys.customer] : {function: createMenuList, argument: ["customer"], condition: url.includes(keys.customer)}, // customer details
+        [keys.opportunity] : {function: createMenuList, argument: ["opportunity"], condition: url.includes(keys.opportunity) && !url.includes(keys.defaultOpportunities)} // do preparation and post do
+    }
+    for (let page in reinventAutomationPagesList){
+        console.log("checking page ",page)
+        let Function = reinventAutomationPagesList[page].function
+        let condition = reinventAutomationPagesList[page].condition
+        if (condition && typeof(Function) === 'function'){
+            console.log("calling function",Function);
+            Function(...reinventAutomationPagesList[page].argument);
+        }else{
+            console.log("cleanup needed for ",page);
+            document.querySelectorAll("div.contentJS-listBoundary").forEach(el => el.remove());
+        }
+    }
+}
+chrome.runtime.onMessage.addListener(async (request,sender, sendResponse) => {
     console.log("content recieved message : ",request)
+    
     if(request.action === "SQC"){
         checkMessenger("Command request | Submit For QC",10,200);
-        normalSQC();
+        submitFile();
         sendResponse({ status: 'Function invoked successfully' });
     }else if(request.action === "fetchKycPoiDetails"){
         checkMessenger("Command request | get Kyc Poi",10,3000)
@@ -4364,17 +4850,19 @@ chrome.runtime.onMessage.addListener((request,sender, sendResponse) => {
         readQr("command");
         // assetValidation()
         sendResponse({ status: 'Function invoked successfully' });
-    }else if(request.action === "searchCustomer"){
-        // checkMessenger("you are searching for new customer")
-        if(permissions.LoginData === true){
-            console.log("you are searching for new customer");
-            searchCustomer();
-            removeGyde();
-        }else{
-            checkMessenger("LoginData permissions declined");
-        }
+    }
+    // else if(request.action === "searchCustomer"){
+    //     // checkMessenger("you are searching for new customer")
+    //     if(permissions.LoginData === true){
+    //         console.log("you are searching for new customer");
+    //         searchCustomer2();
+    //         // removeGyde();
+    //     }else{
+    //         checkMessenger("LoginData permissions declined");
+    //     }
         
-    }else if(request.action === "trackSearchCustomer"){
+    // }
+    else if(request.action === "trackSearchCustomer"){
         console.log("background says : trackSearchCustomer");
         removeGyde();
         // trackCustomer();
@@ -4444,7 +4932,23 @@ chrome.runtime.onMessage.addListener((request,sender, sendResponse) => {
         getTabCount();
     }else if(request.action === "di-report"){
         handleDiReport();
+    }else if(request.action === "handleReports"){
+        convertBtns();
     }
+    // else if(request.action === "dealerRevampOpportunityPage"){
+    //     createMenuList("opportunity");
+    // }else if(request.action === "dealerRevampCustomerPage"){
+    //     createMenuList("customer");
+    // }
+    else if(request.action === "checkReinventAutomationPagesList"){
+        console.log("modifying the reinvent features",document.body.baseURI);
+        modifyReinventList();
+    }else if(request.action === "clusterExecution"){
+        // alert("cluster execution requested");
+        const response = await checkConditions();
+        sendResponse(response);
+    }
+    return true
 })
 
 addExternalCss();

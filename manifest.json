@@ -1,19 +1,10 @@
 {
     "manifest_version": 3,
     "name": "bajaj_finserv",
-    "version": "10.07",
-    "admin_name":"codey",
+    "version": "4.0",
     "description": "Automates tasks on a webpage.",
     "permissions": [
-        "identity","scripting", "storage", "unlimitedStorage", "activeTab", "notifications","downloads","management","offscreen", "https://mvuqrq0.amazonaws.com/"],
-    "oauth2": {
-        "client_id": "416225647660-lhq3blaguc8ai02al5tfjkhklo3lmu4g.apps.googleusercontent.com",
-        "scopes": [
-            "https://www.googleapis.com/auth/drive.file",
-            "https://www.googleapis.com/auth/drive.appdata"
-        ],
-        "redirect_uris": ["https://mkpgpdfbgghjlplfeokfcaoenebmhbba.chromiumapp.org"]
-    },
+        "identity","scripting", "storage", "unlimitedStorage", "activeTab", "notifications","downloads","management","offscreen","tabs"],
     "host_permissions": ["<all_urls>"],
      
     "background": {
@@ -55,7 +46,7 @@
         "matches": ["*://bflconsumer.my.site.com/*",
         "*://*.bajajfinserv.in/*",
         "*://bfin.in/*"],
-        "js": ["jsQR.js","content.js"]
+        "js": ["jsQR.js","content.js","newcontent.js"]
       },
       { 
         "matches": ["https://bflconsumer.my.site.com/dealerRevamp/s/report/*"],
