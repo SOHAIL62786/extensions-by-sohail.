@@ -27,7 +27,6 @@ const gmdElements = [
     "div.slds-checkbox label[for*='checkbox-unique-id-106'] span.slds-checkbox_faux",
     "div.slds-checkbox label[for*='checkbox-unique-id-107'] span.slds-checkbox_faux"
 ]
-let listenersHistory = {}
 let permissions = null
 function getPermissions(){
     return new Promise(async (resolve,reject) => {
@@ -40,8 +39,6 @@ function getPermissions(){
 function messageToBackground(type,text){
     // send message to background.js
     chrome.runtime.sendMessage({ to: "background.js", from: "content", type: type , text: text},(response)=> {
-        // console.log(response);
-        // alert(response.reply);
         console.log("response from background : ",response);
         return response
     });
@@ -51,21 +48,6 @@ getPermissions().then(data => {
     const date = new Date
     const newDate = date.toISOString().split("T")[0];
     
-    // if(data.lastExtensionRefreshed != newDate && permissions.autoRefresh === true){
-    //     data.lastExtensionRefreshed = newDate;
-    //     commitChanges("permissions",data);
-    //     alert("Extension will close now, you can open it again.");
-    //     messageToBackground("extensionReload","");
-    // }else 
-    // if(data.lastDataBackup != newDate){
-    //     if(data.autoBackup === true){
-    //         data.lastDataBackup = newDate;
-    //         commitChanges("permissions",data);
-    //         messageToBackground("download","database");
-    //     }
-    // }else{
-    //     console.log("no need to refresh");
-    // }
 })
 
 console.log("permissions is ",permissions);
@@ -79,7 +61,6 @@ function getLocalData(left){
           commitChanges(left,{});
           resolve({})
         }else{
-        //   console.log("data fetched : ", request[left]);
           resolve(request[left]);
         }
       })
@@ -147,10 +128,8 @@ function waitForDomLoading(time){
                     if(status === "loaded"){
                         console.log("dom is loaded"); 
                         checkMessenger("dom is loaded",1,1000);
-                        // sleep(1000).then(s => {
                             clearInterval(interval);
                             resolve("loaded");
-                        // })
                         
                     }else if(status === "loading"){
                         console.log("dom is loading"); checkMessenger("dom is loading",1,1000)
@@ -195,13 +174,11 @@ function waitForElementWithText(selector,text,time){
 // waits until an element appears, based on the selector and returns the element
 function waitForElement(selector,timeout) {
     return new Promise((resolve, reject) => {
-        // console.log("selector is : ",selector);
         const startTime = Date.now();
         const checkExist = setInterval(() => {
             const element = document.querySelectorAll(selector);
             if (element && element.length > 0) {
                 clearInterval(checkExist);
-                // console.log("waitForElement | element found : ",element);
                 resolve(element);
             } else if (Date.now() - startTime > timeout) {
                 clearInterval(checkExist);
@@ -210,68 +187,11 @@ function waitForElement(selector,timeout) {
         }, 100); // Check every 100ms
     });
 };
-const permitSQC = async (elements) => {
-    // return promise
-    // check if the checkboxes are disabled,
-    // if they are disabled then check for the error above checkboxes
-    // if they are not disabled then return proceed for sqc 
-    elements = "div.modal__container .slds-m-around_small input"
-    await waitForElement(elements,3000).catch(error => console.log(error))
-    return new Promise((resolve,reject)=> {
-        if(elements[0].disabled){
-            console.log("checkboxes are disabled")
-            validateInvoice = document.querySelector("c-validate-invoice")
-            validateBtn = document.querySelector("c-validate-invoice div.slds-align_absolute-center lightning-button button")
-            if(validateInvoice){
-                if(validateBtn){
-                    validateBtn.focus()
-                    validateBtn.click()
-                }else{console.log("some other error")}
-            }else{
-                console.log("some other error")
-                reject(new Error("some other error"))
-            }
-        }else{
-            console.log("checkboxes are enabled")
-            resolve("Granted")
-        }
-    });
-    
-};
-async function experiment(){
-   const el = document.querySelector('ul.slds-button-group-list li.slds-dropdown-trigger slot');
-    if (el) {
-    console.log("Element found:", el);
-    console.log("Is in DOM?", document.contains(el));
-    console.log("Is visible?", el.offsetParent !== null);
-    console.log("Bounding box:", el.getBoundingClientRect());
-
-    try {
-        el.click(); // Try native click
-        console.log("Tried native .click()");
-    } catch (e) {
-        console.error("Native click failed:", e);
-    }
-
-    try {
-        el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-        console.log("Tried dispatchEvent click");
-    } catch (e) {
-        console.error("DispatchEvent click failed:", e);
-    }
-    } else {
-    console.warn("Element not found");
-}
-
-    
-}
 async function wayToSQC(intention = "submitForQc"){
-    // const arrowEl = document.querySelector(".slds-grid.slds-grid--vertical-align-center.slds-grid--align-center.sldsButtonHeightFix");
     const arrowEl = document.querySelector('ul.slds-button-group-list li.slds-dropdown-trigger lightning-button-menu button')
     arrowEl.focus();
     await arrowEl.click();
     console.log("arrowE1 clicked");
-    // const sqcEl = document.querySelector('[data-target-selection-name="sfdc:QuickAction.Opportunity.Submit_For_QC_new"]');
     const sqcEl = document.querySelector("ul.slds-button-group-list li.slds-dropdown-trigger runtime_platform_actions-action-renderer[apiname='Opportunity.Submit_For_QC_new'] slot")
     console.log("sqcel is ",sqcEl);
     sqcEl.focus();
@@ -307,51 +227,12 @@ async function closeMessenger(){
     }
 };
 /***You are not allowed to change Stage to "Post DO" as POA Pending on Customer. Please upload POI, POA, Customer Photo Documents before moving to POST DO***/
-function handleEditError(someError){
-    switch(someError[0].innerText){
-        case "Please complete asset validation.":
-            alert(someError.innerText)
-            break;
-    }
-};
-async function edit_Save(){
-    return new Promise((resolve) => {
-        const saveBtn = "button[title='Save']"
-        waitForElement(saveBtn,5000).then(saveBtnEl => {
-            if(saveBtnEl){
-                console.log("save Btn is : ",element)
-                saveBtnEl[0].focus()
-                saveBtnEl[0].click()
-                const errorDiv = "div.pageLevelErrors div.desktop.forcePageError ul li"
-                waitForElement(errorDiv,5000).then(someError => {
-                    if(someError && someError.length > 0){
-                        resolve(someError)
-                    }else{
-                        console.log("no error found <5>")
-                    }
-                })
-            }else{
-                checkMessenger("edit_Save | saveBtnEl => not found",1,1000)
-                console.log("edit_Save | saveBtnEl => not found")
-            }
-        }).catch(error => console.log(error))
-        
-    })
-    
-};
 async function validateAgreement(){
-    // const arrowEl = document.querySelector(".slds-grid.slds-grid--vertical-align-center.slds-grid--align-center.sldsButtonHeightFix");
     const arrowEl = document.querySelector('ul.slds-button-group-list li.slds-dropdown-trigger lightning-button-menu button');
     if(arrowEl){
         arrowEl.focus();
         arrowEl.click();
     }else {
-        // response = prompt("Cannot initiate validate agreement, Do you want to try again","yes");
-        // if(response === "yes"){
-        //     validateAgreement();
-        // }else {
-        //     console.log("validate agreement dropped");
-        // }
         console.log("arrowEl not found trying again");
         await sleep(500)
         validateAgreement();
@@ -377,12 +258,10 @@ async function walletLinking(action = "link"){
             await editBtn.click()
             await waitForElement(dropDown,30000)
                 .then(element=>{
-                    // checkMessenger("dropdown selected");
                     setTimeout(() => {
                         element[0].focus()
                         element[0].click()
                         console.log("dropdown element clicked")
-                        // checkMessenger("dropdown element clicked")
                     },2000)
                 })
                 .catch(error => {
@@ -396,7 +275,6 @@ async function walletLinking(action = "link"){
                     console.log("others element found",)
                     element[0].focus()
                     element[0].click()
-                    // checkMessenger("others element clicked")
                     closeMessenger()
                 })
             }else{
@@ -405,7 +283,6 @@ async function walletLinking(action = "link"){
                     console.log("li-None element found",)
                     element[0].focus()
                     element[0].click()
-                    // checkMessenger("li-None element clicked")
                     closeMessenger()
                 })
             }
@@ -442,7 +319,6 @@ const getPOIData = async () =>{
             console.log(data)
             if (data && data.length > 1){
                 
-                // alert("getPOIData | Data found")
                 console.log(data[0].children[1].textContent)
                 console.log(data[1])
                 poiType = data[0].children[1].textContent.split(":")[1]?.trim() || null;
@@ -505,14 +381,6 @@ async function selectkycPOI(element,inputEl,POIData){
             newInput.focus()
             newInput.dispatchEvent(new Event("input",{bubbles:true}))
             newInput.dispatchEvent(new Event("change",{bubbles:true}))
-            // inputEl.children[0].value = POIData.poiNum
-            // inputEl.children[0].focus()
-            // // inputEl.children[0].value = ""
-            // // inputEl.children[0].focus()
-            // inputEl.children[0].value = POIData.poiNum
-            // inputEl.children[0].blur()
-            // inputEl.children[0].dispatchEvent(new Event("input",{bubbles:true}))
-            // inputEl.children[0].dispatchEvent(new Event("change",{bubbles:true}))
             checkMessenger("poi deatils added",10,2000)
         }else{console.log("selectkycPOI | POIData doesn't exist")}
     }else{console.log("selectkycPOI | inputEl doesn't exist")}
@@ -606,7 +474,6 @@ async function fetchKycPoiDetails(){
 async function listenerSubmitSqc(){
     checkMessenger("waiting for linking status",10,3000)
     waitForError("div.toastContainer","not linked",10000).then(async error => {
-        // checkMessenger("wallet not linked",10,3000);
         await closeSQC()
         await sleep(1000)
         await walletLinking()
@@ -634,9 +501,7 @@ async function checkTheBoxes(element){
     console.log("length is = ",element.length)
 
     for (el of element){
-        // console.log(el.innerText)
         await el.click();
-        // console.log("checkboxes clicked")
     }
     for(el of gmdElements){
         element = document.querySelector(el);
@@ -660,22 +525,6 @@ async function checkTheBoxes(element){
         submitButton.addEventListener("click",listenerSubmitSqc);
         submitButton.click()
         console.log("submitButton clicked");
-        // if(submitButton.disabled === false){
-        //     console.log("sqc btn not clicked");
-        //     checkMessenger('sqc btn not clicked');
-        //     const interval = setInterval(() => {
-        //         btn = document.querySelector('c-submit-for-qc div.modal__container lightning-button button[type="submit"]');
-        //         btn.click();
-        //         if(btn.disabled === true){
-        //             checkMessenger("File Submition initiated",10,3000);
-        //             console.log("File Submition initiated");
-        //             clearInterval(interval);
-        //         }
-        //     },500)
-        // }else{
-        //     checkMessenger("File Submition initiated",10,3000);
-        //     console.log("File Submition initiated");
-        // }
         
     }else{console.log("button not found")}
 };
@@ -727,7 +576,6 @@ function addHtmlCss(){
                 container.style.maxHeight = "30vmin";
                 container.style.zIndex = "9999";
                 container.style.overflowY = "scroll"
-                // container.style.background = "black";
 
                 // Append the specific element to the container
                 container.appendChild(specificElement);
@@ -750,24 +598,6 @@ function addHtmlCss(){
         })
         .catch((error) => console.error("Error loading popup.html:", error));
 };
-async function adminSQC2(){
-    await wayToSQC()
-    const permit = await permitSQC()
-    if (permit == "Granted"){
-        console.log("SQC IS ALLOWED")
-    }
-};
-async function adminSQC1(){
-    const prepare  = await prepareForQC()
-    console.log("adminSQC1 | prepareForQC => : ",prepare)
-    // checkMessenger(`adminSQC1 | prepareForQC => : ${prepare}`)
-    if(prepare === "initiateSQC"){
-        await adminSQC2()
-    }else if(prepare === "initiateWalletLinking"){
-        await walletLinking();
-        await adminSQC2();
-    }else{console.log("some error occured")}
-};
 async function normalSQC(){
     if(permissions.sqc === true){
         await wayToSQC();
@@ -778,159 +608,7 @@ async function normalSQC(){
     }
     
 };
-function getLocation(){
-    // return new Promise((resolve,reject)=>{
-        const POPUP = document.querySelector("div.modal-container.slds-modal__container div.modal-header.slds-modal__header h1.title.slds-text-heading_medium.slds-hyphenate");
-        if(POPUP){
-            console.log("getLocation | loc1_Edit : ",POPUP)
-            // checkMessenger("POPUP : Element found")
-            if(POPUP.innerText === "Submit for QC"){
-                console.log("you are at submit for qc")
-                // checkMessenger("you are at submit for qc")
-                return({location: "SQC"}) ;
-            }
-            console.log("you are IN EDIT")
-            // checkMessenger("you are IN EDIT")
-            return({location : "EDIT"});
-        }else{
-            console.log("getLocation | loc1_Edit : Element not found")
-            checkMessenger("loc1_Edit : Element not found",1,2000)
-            return({location : "HOME"})
-        }
-    // })
-    
-};
-async function selectStage(div2,stage){
-    await sleep(3000)
-    for(let i = 1; i < 4 ;i++){
-        console.log("in a loop")
-        // checkMessenger("in a loop")
-        if(div2){
-            console.log("div2 is not null")
-            div2.click()
-            await sleep(1000)
-            if(stage ==="sqc"){
-                console.log("stage is SQC")
-                const sqc = document.querySelector("div.select-options ul.scrollable li.uiMenuItem.uiRadioMenuItem a[title='Submitted For QC']");
-                if(sqc){
-                    // checkMessenger("sqc is not null")
-                    console.log("sqc is not null")
-                    sqc.click()
-                    break;
-                }else{
-                    console.log("sqc is null")
-                    // checkMessenger("sqc is null")
-                }
-                // setTimeout(sqc.click(),1000)
-            }else if(stage ==="postDo"){
-                
-                console.log("stage is postDo")
-                const postDo = document.querySelector("div.select-options ul.scrollable li.uiMenuItem.uiRadioMenuItem a[title='Post DO']")
-                if(postDo){
-                    console.log("postDo is not null")
-                    // checkMessenger("postDo is not null")
-                    postDo.click()
-                    break;
-                }else{
-                    console.log("postDo is null")
-                    // checkMessenger("postDo is null")
-                }
-            }
-        }else{"div 2 is null"}
-    }
-}
-async function changeStage(stage = "postDo"){
-    const stageContainers = document.querySelectorAll("dl div.slds-form-element.slds-hint-parent div.slds-form-element__control")
-    // sohail[87].children[0].children[1].children[0].children[0].children[0].children[0].click()
-    if(stageContainers && stageContainers.length > 0){
-        console.log("changeStage | stageContainers : ",stageContainers)
-        // checkMessenger(`changeStage | stageContainers : found => ${stageContainers.length}`)
-        for(div of stageContainers){
-            console.log("changeStage | div : ",div)
-            if(div.children[0].children[0].innerText === "Stage\n*"){
-                console.log("changeStage | stage element : ",div)
-                // checkMessenger("stage element found")
-                div.scrollIntoView({behavior: 'smooth',block:'center'})
-                // const div2 = div.children[0].children[1]
-                const div2 = div.querySelector("a.select")
-                if(div2){
-                    console.log("changeStage | stage select : ",div2);
-                    // checkMessenger("changeStage | stage select : found => a");
-                    await selectStage(div2,stage)
-                    break;
-                }
-            }
-        }
-    }
-}
-function checkpaymentAuth(){
-    const authStatus = document.querySelectorAll("div.slds-form-element.slds-form-element_readonly.slds-grow.slds-hint-parent.override--slds-form-element")
-    if(authStatus && authStatus){
-        console.log("checkpaymentAuth | authStatus : ",authStatus)
-        // checkMessenger("checkpaymentAuth | authStatus : found")
-        for(div of authStatus){
-            console.log("checkpaymentAuth | authStatus : ",div.children[0].innerText)
-            if(div.children[0].innerText === "Payment Authorization Status"){
-                div.scrollIntoView({
-                    behavior : 'smooth',
-                    block: 'center'
-                })
-                console.log("checkpaymentAuth | authStatus : element found = ",div)
-                console.log("checkpaymentAuth | authStatus : ",div.children[0].innerText)
-                // checkMessenger(`checkpaymentAuth | authStatus : ${div.children[0].innerText}`)
-                const payAuthStatus = {status : div.children[1].innerText}
-                console.log(payAuthStatus);
-                return payAuthStatus;
-            }
-        }
-    }else{
-        console.log("checkpaymentAuth | authStatus : not found");
-        checkMessenger("checkpaymentAuth | authStatus : not found",1,2000)
-    }
-}
 
-async function checkPayAuthWalLink(){
-    const location = await getLocation();
-    if(location){
-        console.log("checkPayAuthWalLink | location : ",location.location);
-        // checkMessenger(`checkPayAuthWalLink | location : ${location.location}`);
-        switch(location.location){
-            case "HOME":
-                console.log("checkPayAuthWalLink | HOME")
-                // checkMessenger("checkPayAuthWalLink | HOME")
-                const payAuthStatus = await checkpaymentAuth()
-                if(payAuthStatus){
-                    switch(payAuthStatus.status){
-                        case "Approved":
-                            console.log("checkPayAuthWalLink | payAuthStatus => Approved")
-                            await changeStage("sqc")
-                            const someError = await edit_Save()
-                            if(someError){
-                                console.log("checkPayAuthWalLink | someError")
-                                await handleEditError(someError)
-                            }
-                            break;
-                        case "Pending":
-                            console.log("checkPayAuthWalLink | payAuthStatus => Pending")
-                            checkMessenger("checkPayAuthWalLink | payAuthStatus => Pending",1,1000)
-                            alert("Please get payment authorization")
-                            break;
-                    }
-                    
-                }
-                break;
-            case "SQC":
-                console.log("checkPayAuthWalLink | SQC")
-                // checkMessenger("checkPayAuthWalLink | SQC")
-                break;
-            case "EDIT":
-                console.log("checkPayAuthWalLink | EDIT")
-                // checkMessenger("checkPayAuthWalLink | EDIT")
-                break;
-        }
-    }
-    
-}
 function checkApprovalData(){
     return new Promise((resolve,reject) => {
         const trs = document.querySelectorAll("table.cdLinesTable tbody tr")
@@ -1053,80 +731,8 @@ function checkRejectReasons(timer = 2000){
     })
     
 }
-function getRcuData(timer = 2000){
-    return new Promise((resolve,reject) => {
-        const options = document.querySelectorAll("div.Rectangle")
-        if(options && options.length > 0){
-            console.log("options found : ",options); //checkMessenger("options found");
-            for(opt of options){
-                // opt.children[0].scrollIntoView({
-                //     behavior: 'smooth',
-                //     block: 'center'
-                // })
-                const heading = opt.children[0].innerText;
-                if(heading.startsWith("7")){
-                    console.log("heading : ", heading); //checkMessenger(`heading : ${heading}`)
-                    const digitalContainer = opt.children[1].children[1]
-                    const digital = digitalContainer.querySelector("textarea");
-                    const cdContainer = opt.children[2].children[0];
-                    const cd = cdContainer.querySelector("textarea");
-                    const rcuContainer = opt.children[2].children[2]
-                    const rcu = rcuContainer.querySelector("textarea");
-                    
-                    const timenow = Date.now()
-                    let timeout = Date.now() + timer
-                    const interval = setInterval(()=> {
-                        if(digital.value.trim() !== "" || cd.value.trim() !== "" || rcu.value.trim() !== ""){
-                            const returnData = {
-                                digital : digital.value.trim(),
-                                cd : cd.value.trim(),
-                                rcu : rcu.value.trim()
-                            }
-                            clearInterval(interval)
-                            console.log("data found : ", returnData); //checkMessenger("data found");
-                            checkMessenger(digital.value.trim());
-                            const rCon1 = rcu.value != "" 
-                            const rCon2 = digital.value.trim().toLowerCase().includes("rcu")
-                            const rCon3 = cd.value.trim().toLowerCase().includes("rcu")
-                            if(rCon1){
-                                returnData.status = true
-                                returnData.container = "rcu"
-                            }else if  (rCon2){
-                                returnData.status = true
-                                returnData.container = "digital"
-                            }else if  (rCon3){
-                                returnData.status = true
-                                returnData.container = "cd"
-                            }else{
-                                returnData.status = false
-                            }
-                            resolve(returnData)
-                        }else{
-                            if(Date.now() < timeout){
-                                console.log("still finding: time left = ",timeout - Date.now())
-                                
-                            }else{
-                                console.log("timeout : rcu data not found");
-                                clearInterval(interval);
-                                reject("rcu data not found")
-                                checkMessenger("reject reason not appeared")
-                            }
-                        }
-                    },100)
-                    
-                }
-            }
-        }else{
-            console.log("reject panel not found"); checkMessenger("reject panel not found");
-            reject("reject panel not found");
-        }
-    })
-    
-}
 function commitChanges(left,right){
     return new Promise((resolve,reject) => {
-      // console.log("chrome is :",chrome);
-      // console.log("local storage is ",localStorage)
       chrome.storage.local.set({[left] : right}, function(){
         if(chrome.runtime.lastError){
           console.log("error saving data : ",chrome.runtime.lastError)
@@ -1139,41 +745,6 @@ function commitChanges(left,right){
     })
     
   }
-function getOpportunities(){
-    let opportunities = []
-    return new Promise((resolve, reject) => {
-        waitForElement("table.assertCart tbody tr",2000).then(assetCart => {
-            if(assetCart && assetCart.length > 0){
-                for (tr of assetCart){
-                    let bidContainer = {}
-                    const bid = tr.children[0].innerText;
-                    if(bid){
-                        bidContainer.bid = bid;
-                        const bidDate = date_dd_mm_yyyy(tr.children[1].innerText);
-                        bidContainer.bidDate = bidDate? bidDate: null;
-                        const productName = tr.children[2].innerText;
-                        bidContainer.productName = productName? productName: null;
-                        const bidStage = tr.children[3].innerText;
-                        bidContainer.bidStage = bidStage? bidStage: null;
-                        const invoiceAmount = tr.children[4].children[1].innerText.match(/\d+/);
-                        bidContainer.invoiceAmount = invoiceAmount? Number(invoiceAmount[0]) : null ;
-                        if(bidStage.toLowerCase().includes("completed")){
-                            console.log("skipping bid container => di completed found",bidContainer);
-                        }else{
-                            opportunities.push(bidContainer);
-                        }
-                    }else{
-                        reject(new Error("bid not found"))
-                    }
-                }
-                resolve(opportunities)
-            }
-        }).catch(error => {
-            console.log(error)
-            reject(new Error(error));
-        })
-    })
-}
 async function checkAid(Aid){
     const oldData = await getLocalData("loginData");
     return new Promise (resolve => {
@@ -1206,170 +777,6 @@ function dynamoData(mobile,customerName,customerType,aid,fosName){
         fosName : fosName,
         transactionID : `${date}-${mobile}-${fosName}`,
         yearMonth:yearMonth
-    })
-}
-async function getData2(data){
-    return new Promise(async (resolve, reject) => {
-        const elements = await waitForElement("div.Heading.slds-col.slds-large-size_1-of-2.slds-max-small-size_1-of-1.Customer-Details-heading",300000).catch(error => console.log(error))
-        if(elements && elements.length > 0){
-            console.log("element found",elements[0]); //checkMessenger("element 1 found");
-            const elements2 = await waitForElement("div.Customer-Name-Value").catch(error => console.log(error))
-            let returnData = {}
-            const date = (new Date).toISOString().split("T")[0].split("-").reverse().join("_");
-            returnData.date = date
-            returnData.time = (new Date).toTimeString().split(" ")[0]
-            const num = data.num;
-            returnData.phoneNumber = num || null; checkMessenger(`phoneNumber : ${num}`)
-            console.log("elements 2 transferred",elements2); //checkMessenger("ELEMENTS 2 FOUND");
-            const fosName = document.querySelector("span.profileName").innerText;
-            returnData.fosName = fosName || null ; checkMessenger(`fosName : ${fosName}`)
-            const customerName = elements2[0].innerText; 
-            returnData.customerName = customerName || null ; checkMessenger(`CUSTOMER NAME : ${customerName}`)
-            const customerType = elements2[1].innerText; 
-            returnData.customerType = customerType || null ; checkMessenger(`customerType : ${customerType}`);
-            returnData.approvalType = "numberSearch" ; checkMessenger(`approvalType : numberSearch`)
-            const Aid = document.querySelector(".slds-col.slds-size_1-of-2.Customer-Data-Value");
-            if(Aid && Aid.innerText.startsWith("A")){
-                console.log("Aid found : ",Aid); 
-                returnData.Aid = Aid.innerText || null ; checkMessenger(`Aid : ${Aid.innerText}`)
-                dynamoData(data.num,customerName,customerType,Aid.innerText,fosName)
-            }else{console.log("Aid not found"); checkMessenger("aid not found");}
-            if(Number(data.num) == Number(customerName)){
-                console.log("this is fresh login"); //checkMessenger("this is fresh login");
-                returnData.loginType = "freshLogin"; checkMessenger(`loginType : freshLogin`);
-                console.log("fresh login returns data : ",returnData);
-                checkApprovalListener(Aid.innerText);
-                // resolve(returnData);
-            }else{
-                // work pending ( get bid and add it here)
-                const opportunities = await getOpportunities().catch(error => console.log(error));
-                if(opportunities && opportunities.length > 0){
-                    const result = await checkAid(returnData.Aid);
-                    if(result.status === "oldAid"){
-                        const AidSection = result.data[returnData.Aid];
-                        const oldOpportunities = AidSection.opportunities;
-                        if(oldOpportunities && oldOpportunities.length> 0){
-                            opportunities.forEach((opp,index) => {
-                                for(oldOpp of oldOpportunities){
-                                    if(oldOpp.id === opp.id){
-                                        opportunities.splice(index,1);
-                                    }
-                                }
-                            })
-                        }
-                        const prviousBids = []
-                        for(opp of opportunities){
-                            const bid = opp.bid;
-                            prviousBids.push(bid);
-                        }
-                        const localData =  await getLocalData("previousBids");
-                        if(localData && localData[date]){
-                            localData[date].push(prviousBids);
-                            commitChanges("previousBids",localData)
-                        }else{
-                            changes = {...localData,[date]: prviousBids}
-                            commitChanges("previousBids",changes)
-                        }
-                    }else if(result.status === "newAid"){
-                        const previousBids = []
-                        for(opp of opportunities){
-                            const bid = opp.bid;
-                            previousBids.push(bid);
-                        }
-                        const localData =await getLocalData("previousBids");
-                        if(localData && localData[date]){
-                            for(bids of previousBids){
-                                localData[date].push(bids);
-                            }
-                            commitChanges("previousBids",localData)
-                        }else{
-                            changes = {...localData,[date]: previousBids}
-                            commitChanges("previousBids",changes)
-                        }
-                    }
-                }
-                if(customerType == "NTB"){
-                    //checkMessenger("It is Ntb customer");
-                    if(Number(data.num) == Number(customerName)){
-                        /*** --- FRESH LOGIN--- ***/ 
-                        console.log("this is fresh login");
-                        returnData.loginType = "freshLogin"; checkMessenger(`loginType : freshLogin`);
-                        console.log("fresh login returns data : ",returnData);
-                        checkApprovalListener(Aid.innerText);
-                        // resolve(returnData);
-                    }else{
-                        /*** --- NTB-REAPPRAISAL --- ***/
-                        console.log("this is not fresh login"); //checkMessenger("this is not fresh login");
-                        returnData.loginType = "reappraisal"; checkMessenger(`loginType : reappraisal`)
-                        const approval = await checkApprovalData();
-                        if(approval){
-                            console.log("approval status = ",approval)
-                            if(approval.status === "allNotApproved"){
-                                returnData.approvalStatus = "allNotApproved"
-                                const result = await checkRejectReasons(10000).catch(error => {
-                                    console.log("reject reason not appeared", error);
-                                })
-                                if(result){
-                                    console.log("REJECT DATA",result)
-                                    if(result.status === true){
-                                        returnData.rcuReject = true;
-                                        returnData.rcuRejectReason = result[result.container]
-                                    }else if(result.status === false){
-                                        returnData.rcuReject = false
-                                        returnData.otherReject = result.digital ?? result.cd
-                                    }
-                                }
-                            }else if(approval.status === "someNotApproved"){
-                                console.log("approval.a1",Number(approval.a1.trim().toLowerCase()));
-                                console.log("approval.a3",Number(approval.a3.trim().toLowerCase()));
-                                returnData.approvalStatus = "someNotApproved"
-                                if(approval.a1.trim().toLowerCase() === "not approved" || Number(approval.a1.trim().toLowerCase()) === 0){
-                                    returnData.cdReject = true;
-                                }else if(approval.a3.trim().toLowerCase() === "not approved"|| Number(approval.a3.trim().toLowerCase()) === 0){
-                                    returnData.digitalReject = true;
-                                };
-                                if(approval.a1.trim().toLowerCase() !== "not approved" && Number(approval.a1.trim().toLowerCase()) > 0){
-                                    returnData.cdReject = false;
-                                }else if(approval.a3.trim().toLowerCase() !== "not approved" && Number(approval.a3.trim().toLowerCase()) > 0){
-                                    returnData.digitalReject = false;
-                                };
-                                const result = await checkRejectReasons(10000).catch(error => {
-                                    console.log("reject reason not appeared", error);
-                                })
-                                if(result){
-                                    console.log("reject reasons are = ",result)
-                                    if(result.digital.toLowerCase().includes("phone lock")){
-                                        returnData.phoneLocking = result.digital;
-                                    }else if(returnData.cdReject === true){
-                                        returnData.cdRejectReason = result.cd; 
-                                    }else if(returnData.digitalReject === true){
-                                        returnData.digitalRejectReason = result.digital;
-                                    }
-                                    console.log("sending reject reasons = ",returnData)
-                                }
-                            }else if(approval.status === "allApproved"){
-                                returnData.approvalStatus = "allApproved";
-                            }
-                        }
-                    }
-                }else if(customerType == "ETB"){
-                    // checkMessenger("It is ETB customer")
-                    if(elements2.length > 2){
-                        /*** --- ETB-CARD --- ***/
-                        console.log("it is card customer"); checkMessenger("it is card customer")
-                        returnData.loginType = "cardCustomer"; checkMessenger(`loginType : cardCustomer`)
-                        const isActive = elements2[2].innerText;
-                        returnData.isActive = isActive || null;
-                        checkMessenger(`isActive : ${isActive}`)
-                    }else{
-                        /*** --- ETB-REAPPRAISAL --- ***/
-                        returnData.loginType = "etbReappraisal"; checkMessenger(`loginType : etbReappraisal`)
-                        console.log("it is not card customer"); checkMessenger("it is NOT CARD customer");
-                    }
-                }
-            }
-            resolve(returnData);
-        }
     })
 }
 async function createListenerEl(){
@@ -1418,7 +825,7 @@ function grabNumber(){
                 }
                 
                 console.log("parent node is ",elements[0].parentNode)
-                console.log("numInput found",elements[0]);console.log("searchBtn found",searchBtn);//checkMessenger("numInput found")
+                console.log("numInput found",elements[0]);console.log("searchBtn found",searchBtn);
                 async function listenSearchBtn(Action){
                     waitForElement("div.Heading.slds-col.slds-large-size_1-of-2.slds-max-small-size_1-of-1.Customer-Details-heading",300000).then(element => {
                         const num = elements[0].value;
@@ -1471,7 +878,6 @@ function grabNumber(){
                             console.log(event);
                             if(event.key === "Enter"){
                                 console.log("phone number entered")
-                                // alert("phone number submitted");
                                 searchBtn.click();
                             }
                         })
@@ -1533,7 +939,7 @@ function grabNumber2(){
             if(permissions.qrScans === true){
                 parent.prepend(removeListener);
             }
-            console.log("numInput found",numInput);console.log("searchBtn found",searchBtn);//checkMessenger("numInput found")
+            console.log("numInput found",numInput);console.log("searchBtn found",searchBtn);
             async function listenSearchBtn(Action){
                 waitForElement("p.customerName",300000).then(element => {
                     const num = numInput.value;
@@ -1582,10 +988,8 @@ function grabNumber2(){
                         }
                     });
                     numInput.addEventListener("keydown",(event) => {
-                        // console.log(event);
                         if(event.key === "Enter"){
                             console.log("phone number entered")
-                            // alert("phone number submitted");
                             searchBtn.click();
                         }
                     })
@@ -1657,60 +1061,18 @@ async function checkCustomerBlocked(Aid){
     const generateScheme = document.querySelector("div.generateBtn button");
     if(generateScheme){
         checkMessenger("generateScheme button found",1,3000);
-        // console.log("button found",generateScheme)
         generateScheme.removeEventListener("click",checkCustomerBlocked.generateSchemeListener);
         generateScheme.addEventListener("click",checkCustomerBlocked.generateSchemeListener);
     }
 }
 
-async function searchCustomer(){
-    // checkMessenger("you are good to go")
-    const numInput = await waitForElement(".mobileNumber.slds-form-element div.slds-form-element__control.slds-grow input.slds-input",10000).catch(error => console.log(error))
-    const resolveData = await grabNumber();
-
-    if(resolveData){
-        
-        console.log("searchCustomer | resolveData => ",resolveData);
-        console.log("searchCustomer | num => ",resolveData.num);
-        if(resolveData.action === "Qr"){
-            const data = {
-                mobileNumber: resolveData.num,
-                action: "openQr",
-                url: permissions.qrUrl || "https://bfin.in/?3Q2VRXD8"
-            };
-            messageToBackground("data",data);
-            console.log("qr request sent to background : ",data)
-            
-            
-        }
-        const returnData = await getData2(resolveData);
-        if(returnData){
-            // checkMessenger(`searchCustomer || ${num}`);
-            console.log("searchCustomer | returnData => ",returnData);
-            messageToBackground("loginData",returnData);
-            console.log("Data sent to background : ",returnData);
-            checkCustomerBlocked(returnData.Aid);
-            // if(permissions.qrScans === true){
-            
-            // }else{
-            //     checkMessenger("Qr Scan Permission Declined",10,3000)
-            //     messageToBackground("loginData",returnData); 
-            //     console.log("Data sent to background : ",returnData)
-            //     checkCustomerBlocked(returnData.Aid);
-            // }
-            
-        }
-    }
-}
 function waitForElementSingle(selector,timeout) {
     return new Promise((resolve, reject) => {
-        // console.log("selector is : ",selector);
         const startTime = Date.now();
         const checkExist = setInterval(() => {
             const element = document.querySelector(selector);
             if (element) {
                 clearInterval(checkExist);
-                // console.log("waitForElement | element found : ",element);
                 resolve(element);
             } else if (Date.now() - startTime > timeout) {
                 clearInterval(checkExist);
@@ -1797,7 +1159,6 @@ async function captureScreenshot(){
                     if(button.innerText.toLowerCase() === "sign out"){
                         console.log("sign out buton found",button);
                         button.click();
-                        // await sleep(500);
                         
                     }else{console.log("sign out button not found");}
                 }
@@ -1824,150 +1185,21 @@ async function captureScreenshot(){
         
     }
 }
-// duplicateScreenshots = false
-// async function initiateQrOtp3(num){
-//     const formDiv = document.querySelector("div.login-container.flex-row-center")
-//     if(formDiv){
-//         console.log(formDiv.children);
-//         console.log("form div found",formDiv); 
-//         // checkMessenger("form div found");
-//         const form = formDiv.querySelector("form");
-//         if(form){
-//             console.log("form found",form); 
-//             // checkMessenger("form found");
-//             console.log(form.children)
-//             await sleep(500);
-//             form.children[1].value = num
-//             await sleep(200);
-//             form.children[3].children[0].click()
-//             await sleep(200);
-//             form.children[5].click();
-//             waitForElementWithText("div.tnc__error-message","please accept",2000).then(async (element) => {
-//                 form.children[3].children[0].click();
-//                 await sleep(200);
-//                 form.children[5].click();
-//             }).catch(error => console.log("element not found",error))
-//             const elements = await waitForElement("div.dialog-container",10000).catch(error => {
-//                 console.log(error);
-//                 checkMessenger("modal content not found")
-//             })
-//             if(elements && elements.length > 0){
-//                 console.log("modal content found",elements);
-//                 // checkMessenger("modal content found");
-//                 const button = elements[0].querySelector("button.onb-btn-orange");
-//                 if(button){
-//                     console.log("button found = ",button);
-//                     //  checkMessenger("button found");
-//                     if(!initiateQrOtp3.submit){
-//                         initiateQrOtp3.submit = async () => {
-//                             if(duplicateScreenshots === true){
-//                                 checkMessenger("duplicate screenshot prevented",10);
-//                                 console.log("duplicate screenshot prevented");
-//                                 return
-//                             }
-//                             duplicateScreenshots = true
-//                             messageToBackground("reminder",{
-//                                 tag:"initiateQragain",
-//                                 phone:num
-//                             })
-//                             console.log("button clicked");
-//                             // checkMessenger("button clicked");
-//                             const status = await getDomStatus()
-//                             function checkboxSubmitScreenshot(call){
-//                                 checkMessenger(`function running | checkboxSubmitScreenshot => ${call}`);
-//                                 console.log(`function running  ============> checkboxSubmitScreenshot => ${call}`);
-//                                 waitForElementWithText("h2.consent-login-modal__heading.fs-18.flex-jc-center.mb-16","consent",3000).then(element => {
-//                                     if(element){
-//                                         checkMessenger("consent element found",10,3000);
-//                                         const checkBoxes = document.querySelectorAll("div.modal__content.consent-login-modal.flex-column-center input[type='checkbox']");
-//                                         if(checkBoxes && checkBoxes.length > 0){
-//                                             checkMessenger("checkboxes found",1,3000);
-//                                             checkBoxes.forEach((checkBox) => {
-//                                                 checkBox.click();
-//                                             })
-//                                             const buttons = document.querySelectorAll("button.btn.btn--primary-invert");
-//                                             if(buttons && buttons.length > 0){
-//                                                 buttons.forEach(button => {
-//                                                     // if(checkBoxes.length === 1){
-//                                                     //     if(button.innerText.toLowerCase().includes("skip")){
-//                                                     //         console.log("skip button found"); checkMessenger("skip button found");
-//                                                     //         button.click();
-//                                                     //     }else{
-//                                                     //         console.log("button not found");
-//                                                     //         checkMessenger("consent button not found")
-//                                                     //     }
-//                                                     // }else{
-//                                                         if(button.innerText.toLowerCase().includes("give consent")){
-//                                                             console.log("consent button found"); checkMessenger("consent button found");
-//                                                             button.click();
-//                                                         }else if(button.innerText.toLowerCase().includes("continue")){
-//                                                             console.log("continue button found"); checkMessenger("continue button found");
-//                                                             button.click();
-//                                                         }else{
-//                                                             console.log("button not found");
-//                                                             checkMessenger("consent button not found")
-//                                                         }
-//                                                     // }
                                                     
-//                                                 })
-//                                             }else{
-//                                                 checkMessenger("buttons not found",10,3000);
-//                                                 console.log("buttons not found");
-//                                             }
-//                                         }
-//                                     }
-//                                 })
-//                                 waitForElement("div.emi-card",60000).then(async element => {
-//                                     checkMessenger("emi card found",1,2000);
-//                                     const messengers = document.querySelectorAll("div.contentJS-externalMessenger");
-//                                     messengers.forEach(messenger => messenger.remove())
-//                                     captureScreenshot();
-//                                 }).catch(error => console.log(error))
-//                             }
-//                             if(status === "loading"){
-//                                 console.log("page is loading");
-//                                 // checkMessenger("page is loading");
-//                                 document.addEventListener('DOMContentLoaded',async () => {
-//                                     checkboxSubmitScreenshot("call from loading");
-//                                 },{once:true})
-//                             }else if(status === "loaded"){
-//                                 console.log("page is loaded");checkMessenger("page is loaded call after loading");
-//                                 checkboxSubmitScreenshot("call from loaded");
-//                             }
-//                         }
-//                     }
-//                     button.removeEventListener("click",initiateQrOtp3.submit);
-//                     button.addEventListener("click",initiateQrOtp3.submit);
-//                 }else{
-//                     console.log("button not found");checkMessenger("button not found");
-//                 }
-//             }
-                
-//         }else{
-//             console.log("form not found"); checkMessenger("form not found");
-//         }
-//     }else{console.log("form div not found"); checkMessenger("form div not found")}
-    
-// }
-
 duplicateScreenshots = false
 async function initiateQrOtp4(num){
     const formDiv = document.querySelector("div.login-container.flex-row-center");
     if(formDiv){
         console.log(formDiv.children);
         console.log("form div found",formDiv); 
-        // checkMessenger("form div found");
         const form = formDiv.querySelector("form");
         if(form){
             console.log("form found",form); 
-            // checkMessenger("form found");
             console.log(form.children)
             await sleep(100);
             form.children[0].children[0].value = num
             form.children[0].children[0].dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
             await sleep(100);
-            // form.children[3].children[0].click()
-            // await sleep(100);
             form.children[3].querySelector("input").click();
             console.log("checkbox checked")
             await sleep(100)
@@ -1976,7 +1208,6 @@ async function initiateQrOtp4(num){
             waitForElementWithText("div.tnc__error-message","please accept",2000).then(async (element) => {
                 form.children[3].querySelector("input")?.click();
                 await sleep(200);
-                // form.querySelector("button")?.click();
                 form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
             }).catch(error => console.log("element not found",error));
             
@@ -2015,7 +1246,6 @@ async function initiateQrOtp4(num){
                 const messengers = document.querySelectorAll("div.contentJS-externalMessenger");
                 messengers.forEach(messenger => messenger.remove())
                 if(duplicateScreenshots === true){
-                    // checkMessenger("duplicate screenshot prevented",10);
                     console.log("duplicate screenshot prevented");
                     return
                 }else{
@@ -2025,120 +1255,6 @@ async function initiateQrOtp4(num){
             }).catch(error => console.log(error))
         }
     }
-}
-async function initiateQrOtp3(num){
-    const formDiv = document.querySelector("div.login-container.flex-row-center")
-    if(formDiv){
-        console.log(formDiv.children);
-        console.log("form div found",formDiv); 
-        // checkMessenger("form div found");
-        const form = formDiv.querySelector("form");
-        if(form){
-            console.log("form found",form); 
-            // checkMessenger("form found");
-            console.log(form.children)
-            await sleep(500);
-            form.children[1].value = num
-            await sleep(200);
-            form.children[3].children[0].click()
-            await sleep(200);
-            form.children[5].click();
-            waitForElementWithText("div.tnc__error-message","please accept",2000).then(async (element) => {
-                form.children[3].children[0].click();
-                await sleep(200);
-                form.children[5].click();
-            }).catch(error => console.log("element not found",error))
-            const elements = await waitForElement("div.dialog-container",10000).catch(error => {
-                console.log(error);
-                checkMessenger("modal content not found");
-            })
-            if(elements && elements.length > 0){
-                console.log("modal content found",elements);
-                // checkMessenger("modal content found");
-                const button = elements[0].querySelector("button.onb-btn-orange");
-                if(button){
-                    console.log("button found = ",button);
-                    //  checkMessenger("button found");
-                    if(!initiateQrOtp3.submit){
-                        initiateQrOtp3.submit = async () => {
-                            if(duplicateScreenshots === true){
-                                checkMessenger("duplicate screenshot prevented",10);
-                                console.log("duplicate screenshot prevented");
-                                return
-                            }
-                            duplicateScreenshots = true
-                            messageToBackground("reminder",{
-                                tag:"initiateQragain",
-                                phone:num
-                            })
-                            console.log("button clicked");
-                            // checkMessenger("button clicked");
-                            const status = await getDomStatus()
-                            function checkboxSubmitScreenshot(call){
-                                checkMessenger(`function running | checkboxSubmitScreenshot => ${call}`);
-                                console.log(`function running  ============> checkboxSubmitScreenshot => ${call}`);
-                                waitForElementWithText("h2.consent-login-modal__heading.fs-18.flex-jc-center.mb-16","consent",3000).then(element => {
-                                    if(element){
-                                        checkMessenger("consent element found",10,3000);
-                                        const checkBoxes = document.querySelectorAll("div.modal__content.consent-login-modal.flex-column-center input[type='checkbox']");
-                                        if(checkBoxes && checkBoxes.length > 0){
-                                            checkMessenger("checkboxes found",1,3000);
-                                            checkBoxes.forEach((checkBox) => {
-                                                checkBox.click();
-                                            })
-                                            const buttons = document.querySelectorAll("button.btn.btn--primary-invert");
-                                            if(buttons && buttons.length > 0){
-                                                buttons.forEach(button => {
-                                                    if(button.innerText.toLowerCase().includes("give consent")){
-                                                        console.log("consent button found"); checkMessenger("consent button found");
-                                                        button.click();
-                                                    }else if(button.innerText.toLowerCase().includes("continue")){
-                                                        console.log("continue button found"); checkMessenger("continue button found");
-                                                        button.click();
-                                                    }else{
-                                                        console.log("button not found");
-                                                        checkMessenger("consent button not found")
-                                                    }
-                                                })
-                                            }else{
-                                                checkMessenger("buttons not found",10,3000);
-                                                console.log("buttons not found");
-                                            }
-                                        }
-                                    }
-                                })
-                                waitForElement("div.emi-card",60000).then(async element => {
-                                    checkMessenger("emi card found",1,2000);
-                                    const messengers = document.querySelectorAll("div.contentJS-externalMessenger");
-                                    messengers.forEach(messenger => messenger.remove())
-                                    captureScreenshot();
-                                }).catch(error => console.log(error))
-                            }
-                            if(status === "loading"){
-                                console.log("page is loading");
-                                // checkMessenger("page is loading");
-                                document.addEventListener('DOMContentLoaded',async () => {
-                                    checkboxSubmitScreenshot("call from loading");
-                                },{once:true})
-                            }else if(status === "loaded"){
-                                console.log("page is loaded");
-                                checkMessenger("page is loaded call after loading");
-                                checkboxSubmitScreenshot("call from loaded");
-                            }
-                        }
-                    }
-                    button.removeEventListener("click",initiateQrOtp3.submit);
-                    button.addEventListener("click",initiateQrOtp3.submit);
-                }else{
-                    console.log("button not found");checkMessenger("button not found");
-                }
-            }
-                
-        }else{
-            console.log("form not found"); checkMessenger("form not found");
-        }
-    }else{console.log("form div not found"); checkMessenger("form div not found")}
-    
 }
 function initiateQrOtp(num){
     getDomStatus().then(status => {
@@ -2161,14 +1277,13 @@ function removeGyde(){
             const div = document.querySelector("div#gyImage");
             if(div){
                 div.remove()
-            }else{console.log("gyde not found"); /***checkMessenger("gyde not found");***/}
+            }else{console.log("gyde not found"); }
         }else if(state === "loading"){
             document.addEventListener("DOMContentLoaded", () => {
                 const div = document.querySelector("div#gyImage");
                 if(div){
                     div.remove()
                 }else{console.log("gyde not found"); 
-                    // checkMessenger("gyde not found");
                 }
             },{once: true})
         }
@@ -2176,69 +1291,6 @@ function removeGyde(){
     
 }
   
-function findElement(){
-    const qrs = document.querySelectorAll("table.cdLinesTable tbody tr")
-    if(qrs && qrs.length > 0){
-        console.log("qr found : ",qrs); checkMessenger("qr found");
-        const c1 = qrs[0].children[1].innerText.trim().toLowerCase()
-        const c2 = qrs[0].children[1].innerText.trim().toLowerCase()
-        const c3 = qrs[0].children[1].innerText.trim().toLowerCase()
-        console.log("c = ",c1," --- ",c2," --- ",c3)
-        checkMessenger(c1); checkMessenger(c2); checkMessenger(c3)
-        if(c1 === "not approved" && c2 === "not approved" && c3 === "not approved"){
-            console.log("all are not approved");
-        }else{  
-            console.log("some are not approved");
-        }
-
-    }else{
-        console.log("qr not found"); checkMessenger("qr not found");
-    }
-}
-function messageToExternalScripts(action, text) {
-    chrome.runtime.sendMessage(
-      { action: action, svg: text, to: "qrDecoder" },
-      (response) => {
-        if (chrome.runtime.lastError) {
-          console.error("Error:", chrome.runtime.lastError.message);
-          checkMessenger(`error occured`)
-          return;
-        }
-  
-        console.log("message sent to external script");
-        console.log("response is ", response);
-        if (response) {
-          console.log("reponse recieved : ", response); checkMessenger(`Response recieved`)
-        }
-      }
-    );
-  }
-function displayCanvas(){
-    const iframe = document.createElement("iframe");
-    iframe.src = chrome.runtime.getURL("qr_decoder.html");
-    // iframe.style.display = "none"
-    document.body.appendChild(iframe)
-    checkMessenger("display canvas");
-    iframe.addEventListener("load", () => {
-        console.log("iframe loaded"); checkMessenger("iframe loaded");
-        setTimeout( () => {
-            messageToExternalScripts("abcd", "PLEASE");
-        },2000)
-    })
-    setTimeout(()=> {
-        iframe.remove();
-        checkMessenger("canvas removed")
-    },10000)
-    
-};
-// waitForElement("span.profileName").then(el => {
-//     fosName = el[0].innerText;
-//     if(fosName.toLowerCase().includes("")){
-//         document.body.style.display = "none"
-//     }else{
-//         console.info("good to go");
-//     }
-// })
 function checkPhoneNumber(data,Aid,customerName){
     return new Promise ((resolve,reject) => {
         const phoneNumber = data[Aid].phoneNumber
@@ -2259,7 +1311,6 @@ function date_dd_mm_yyyy(string){
     month = (date.getMonth() + 1).toString().padStart(2,0);
     year = date.getFullYear()
     newDate = day + "_" + month + "_" + year
-    // console.log(newDate);
     if(newDate.length === 10){
         return newDate;
     }
@@ -2334,8 +1385,6 @@ async function addBidData(tr,bid){
 async function sendError(aid,target){
     const error = await waitForError("div.toastContent div.slds-hyphenate","eligibility reason",3000,"element");
     if(error){
-        // console.log("error found ",error);
-        // alert(`error is ${error}`);
         messageToBackground("inform",{
             message: "Eligibility",
             Aid: aid,
@@ -2359,11 +1408,9 @@ async function getNOReason(Aid){
             if(cd.toLowerCase() === "no"){
                 const clickHere = tds[1]
                 if(clickHere){
-                    // alert("click here")
                     clickHere.children[0].style.backgroundColor = "bisque"
                     clickHere.children[0].style.borderRadius = "10%"
                     clickHere.addEventListener("click",() => {
-                        // alert("you clicked something");
                         sendError(Aid,"cd")
                     })
                 }
@@ -2371,11 +1418,9 @@ async function getNOReason(Aid){
             if(digital.toLowerCase() === "no"){
                 const clickHere = tds[2]
                 if(clickHere){
-                    // alert("click here")
                     clickHere.children[0].style.backgroundColor = "bisque"
                     clickHere.children[0].style.borderRadius = "10%"
                     clickHere.addEventListener("click",() => {
-                        // alert("you clicked something");
                         sendError(Aid,"cdd");
                     })
                 }
@@ -2386,11 +1431,9 @@ async function getNOReason(Aid){
             if(cd.toLowerCase() === "yes" && cdEl.previousSibling.classList.contains("yellowDiv")){
                 const clickHere = tds[1]
                 if(clickHere){
-                    // alert("click here")
                     clickHere.children[0].style.backgroundColor = "bisque"
                     clickHere.children[0].style.borderRadius = "10%"
                     clickHere.addEventListener("click",() => {
-                        // alert("you clicked something");
                         sendError(Aid,"cd")
                     })
                 }
@@ -2398,11 +1441,9 @@ async function getNOReason(Aid){
             if(digital.toLowerCase() === "yes" && digitalEl.previousSibling.classList.contains("yellowDiv")){
                 const clickHere = tds[2]
                 if(clickHere){
-                    // alert("click here")
                     clickHere.children[0].style.backgroundColor = "bisque"
                     clickHere.children[0].style.borderRadius = "10%"
                     clickHere.addEventListener("click",() => {
-                        // alert("you clicked something");
                         sendError(Aid,"cdd");
                     })
                 }
@@ -2476,144 +1517,7 @@ async function getETB_CardData(Aid,element){
             },100)
             
         }else{
-            // reject(new Error("bid not found"))
             console.log("asset cart is empty")
-        }
-    })
-    
-}
-function getETB_CardData1(Aid,element){
-    return new Promise((resolve,reject) => {
-        let resolved = false
-        let waitToResolve = false
-        const etbCardData = {
-            Aid : Aid
-        }
-        etbCardData.customerName = element[0].innerText;
-        etbCardData.approvalType = "pageRefresh"
-        etbCardData.loginType = "cardCustomer"
-        etbCardData.customerType = element[1].innerText;
-        etbCardData.isActive = element[2].innerText;
-        const balanceLimitEl = document.querySelectorAll("div.Heading.slds-col.slds-large-size_1-of-4.slds-max-small-size_1-of-1.Opportunity-Data");
-        let balanceLimit = null
-        if(balanceLimitEl && balanceLimitEl.length > 0){
-            for (el of balanceLimitEl){
-                console.log(" el is ",el)
-                if(el.innerText.toLowerCase().trim().includes("card status")){
-                    const targetEl = el.querySelectorAll(".slds-grid ");
-                    for(El of targetEl){
-                        if(El.innerText.trim().toLowerCase().includes("balance card limit")){
-                            console.log("found balance card limit", El.children[1].innerText);
-                            balanceLimit = El.children[1].innerText;
-                        }
-                    }
-                }
-            }
-        }
-        etbCardData.balanceLimit = balanceLimit? Number(balanceLimit) : null;
-        let opportunities = [];
-        waitToResolve = true;
-        waitForElement("table.assertCart tbody tr",15000).catch(error => {
-            resolve(etbCardData)
-            console.log("etbCard data is ",etbCardData)
-        }).then(assetCart => {
-            
-            const atosAuthorization = document.querySelectorAll("c-atos-authorization-revamp .table-body");
-            if(assetCart && assetCart.length > 0){
-                console.log("Assert Cart",assetCart)
-                for (tr of assetCart){
-                    console.log("in a loop",tr)
-                    let bidContainer = {};
-                    const bid = tr.children[0].innerText;
-                    if(bid){
-                        waitToResolve = true;
-                        const bidDate = date_dd_mm_yyyy(tr.children[1].innerText);
-                        const productName = tr.children[2].innerText;
-                        const bidStage = tr.children[3].innerText;
-                        const invoiceAmount = tr.children[4].children[1].innerText.match(/\d+/);
-                        console.log("bid is ",bid)
-                        checkPreviousBid(bid).then(check => {
-                            console.log("check is : ",check)
-                            if(check === "previous"){
-                                reject(new Error("bid is in Previous bid"))
-                            }else if ( check === "notPrevious" ){
-                                bidContainer.bid = bid;
-                                bidContainer.bidDate = bidDate? bidDate: null;
-                                bidContainer.productName = productName? productName: null;
-                                bidContainer.bidStage = bidStage? bidStage: null;
-                                bidContainer.invoiceAmount = invoiceAmount? Number(invoiceAmount[0]) : null ;
-                                if(atosAuthorization && atosAuthorization.length > 0){
-                                    console.log("atosAuthorization : ",atosAuthorization)
-                                    console.log(atosAuthorization[0].children)
-                                    for(tr of atosAuthorization[0].children){
-                                        console.log("tr is : ",tr?.innerText)
-                                        const authBid = tr?.children[1].innerText
-                                        if(authBid == bid){
-                                            const authStatus = tr.children[6].innerText
-                                            bidContainer.authStatus = authStatus? authStatus : null ;
-                                            const authMessage = tr.children[7].innerText
-                                            bidContainer.authMessage = authMessage? authMessage : null ;
-                                        }
-                                    }
-                                }else{ 
-                                    console.log("atosAuthorization not found")
-                                }
-                                console.log("bid container is ",bidContainer)
-                                opportunities.push(bidContainer);
-                                etbCardData.opportunities = opportunities;
-                                waitToResolve = false
-                                resolve(etbCardData);
-                            }
-                            
-                        })
-                        
-                    }else{
-                        reject(new Error("bid not found"))
-                        waitToResolve = false
-                    }
-                }
-                // resolve(etbCardData);
-            }else{
-                reject(new Error("bid not found"))
-            }
-        })
-        // .then(nothing => {
-        //     // resolve(etbCardData);
-        //     const time = Date.now()
-        //     const timer = time + 5000
-        //     const interval = setInterval(()=> {
-        //         if(Date.now() < timer){
-        //             console.log("wait is : ",waitToResolve)
-        //             if(waitToResolve === false){
-        //                 clearInterval(interval);
-        //                 console.log("etbCardData = resolved",etbCardData);
-        //                 resolve(etbCardData);
-        //             }else if(waitToResolve === true){
-        //                 console.log("waiting to resolve");
-        //             }
-        //         }else{
-        //             console.log("waiting timedout , resolved")
-        //             console.log("etbCard data is ",etbCardData)
-        //             clearInterval(interval);
-        //             resolve(etbCardData);
-        //         }
-        //     },100)
-        // })
-    })
-}
-function getAssetType(Aid,data){
-    let assetType = null
-    return new Promise((resolve,reject) => {
-        console.log("getting assetType from this", data);
-        const AidSection = data[Aid];
-        console.log("Aid section = ",AidSection);
-        if(AidSection.opportunities){
-            for(bid of AidSection.opportunities){
-                console.log("Customer Bid's",bid);
-                console.log("existing productname",bid.productName);
-            }
-        }else{
-            console.log("opportunities not found");
         }
     })
     
@@ -2751,7 +1655,6 @@ async function getReappraisalData2(Aid,element,data){
                         clearInterval(interval);
                         console.log("reappraisalData = resolved",reappraisalData);
                         messageToBackground("loginData",reappraisalData);
-                        // resolve(reappraisalData);
                     }else if(wait === true){
                         console.log("waiting to resolve");
                     }
@@ -2759,133 +1662,10 @@ async function getReappraisalData2(Aid,element,data){
                     console.log("waiting timedout , resolved")
                     clearInterval(interval);
                     messageToBackground("loginData",reappraisalData);
-                    // resolve(reappraisalData);
                 }
                 
             },100) 
         }
-    })
-}
-function getReappraisalData(Aid,element,data){
-    let wait = false
-    return new Promise ((resolve, reject) => {
-        const reappraisalData = {
-            Aid : Aid
-        }
-        reappraisalData.customerName = element[0].innerText;
-        reappraisalData.approvalType = "pageRefresh"
-        reappraisalData.loginType = "reappraisal"
-        reappraisalData.customerType = element[1].innerText;
-        reappraisalData.cibil = getCibil();
-        let opportunities = [];
-        waitForElement("table.assertCart tbody tr",5000).then(assetCart => {
-            console.log("asset cart is ",assetCart); checkMessenger("asset data found");
-            if(assetCart && assetCart.length > 0){
-                console.log("assert cart",assetCart);
-                for (let tr of assetCart){
-                    let bidContainer = {}
-                    const bid = tr.children[0].innerText;
-                    if(bid){
-                        wait = true
-                        const bidDate = date_dd_mm_yyyy(tr.children[1].innerText);
-                        const productName = tr.children[2].innerText;
-                        const bidStage = tr.children[3].innerText;
-                        const invoiceAmount = tr.children[4].children[1].innerText.match(/\d+/);
-                        checkPreviousBid(bid).then(check => {
-                            if(check === "previous"){
-                                reject(new Error("bid is in previous"))
-                                wait = false
-                            }else if(check === "notPrevious"){
-                                bidContainer.bid = bid;
-                                bidContainer.bidDate = bidDate? bidDate: null;
-                                bidContainer.productName = productName? productName: null;
-                                bidContainer.bidStage = bidStage? bidStage: null;
-                                bidContainer.invoiceAmount = invoiceAmount? Number(invoiceAmount[0]) : null ;
-                                opportunities.push(bidContainer);
-                                reappraisalData.opportunities = opportunities;
-                                console.log("opportunities added => ",bidContainer)
-                                wait = false
-                            }
-                        })
-                    }else{
-                        reject(new Error("bid not found"))
-                    }
-                }
-            }
-        }).catch(error => {console.log(error); checkMessenger("asset data not found")}).then(nothing => {
-            waitForDomLoading(10000).then(status => {
-                // sleep(3500).then(s=> {
-                    // work here (add wait till reject reason element has inner teaxt for 3500)
-                    console.log("dom status is : ",status)
-                    checkApprovalData().then( approval => {
-                        if(approval.status === "allNotApproved"){
-                            wait = true
-                            reappraisalData.approvalStatus = "allNotApproved"
-                            checkRejectReasons(10000).then(result => {
-                                console.log("rcuData",result)
-                                if(result.status === true){
-                                    reappraisalData.rcuReject = true;
-                                    reappraisalData.rcuRejectReason = result[result.container]
-                                }else if(result.status === false){
-                                    reappraisalData.rcuReject = false
-                                    reappraisalData.otherReject = result.digital ?? result.cd
-                                }
-                                wait = false
-                            }).catch(error => {
-                                console.log("reject reason not appeared", error);
-                                wait = false
-                            })
-                        }else if(approval.status === "someNotApproved"){
-                            reappraisalData.approvalStatus = "someNotApproved"
-                            if(approval.a1.trim().toLowerCase() === "not approved"){
-                                reappraisalData.cdReject = true;
-                            }else if(approval.a3.trim().toLowerCase() === "not approved"){
-                                reappraisalData.digitalReject = true;
-                            };
-                            if(approval.a1.trim().toLowerCase() !== "not approved"){
-                                reappraisalData.cdReject = false;
-                            }else if(approval.a3.trim().toLowerCase() !== "not approved"){
-                                reappraisalData.digitalReject = false;
-                            };
-                            wait = true
-                            getRcuData(3000).then(result => {
-                                if(reappraisalData.cdReject === true){
-                                    reappraisalData.cdRejectReason = result.cd; 
-                                }else if(reappraisalData.digitalReject === true){
-                                    reappraisalData.digitalRejectReason = result.digital;
-                                }
-                                wait = false
-                            }).catch(error => {wait = false})
-                        }else if(approval.status === "allApproved"){
-                            reappraisalData.approvalStatus = "allApproved";
-                        }
-                    }).then(nothing => {
-                        const time = Date.now()
-                        const timer = time + 5000
-                        const interval = setInterval(()=> {
-                            if(Date.now() < timer){
-                                console.log("wait is : ",wait)
-                                if(wait === false){
-                                    clearInterval(interval);
-                                    console.log("reappraisalData = resolved",reappraisalData);
-                                    resolve(reappraisalData);
-                                }else if(wait === true){
-                                    console.log("waiting to resolve");
-                                }
-                            }else{
-                                console.log("waiting timedout , resolved")
-                                clearInterval(interval);
-                                resolve(reappraisalData);
-                            }
-                            
-                        },100) 
-                        
-                    })
-                    
-                // })
-            })
-        })
-        
     })
 }
 function waitForError(element,include,timer = 5000,intention = "text"){
@@ -2896,13 +1676,8 @@ function waitForError(element,include,timer = 5000,intention = "text"){
             if(Date.now() < timeout){
                 const blockedCustomer = await waitForElement(element,100).catch(error => console.log(error));
                 if(blockedCustomer && blockedCustomer.length > 0){
-                    // console.log("some errors found",blockedCustomer);
-                    // checkMessenger("error found",1,3000);
-                    // checkMessenger(blockedCustomer[0].innerText)
                     for(block of blockedCustomer){
                         if(block.innerText.trim().toLowerCase().includes(include)){
-                            // console.log("target error found ",block.innerText,block);
-                            // checkMessenger("customer is blocked",1,3000);
                             if(intention === "text"){
                                 resolve(block.innerText.trim().toLowerCase());
                             }else{
@@ -2932,7 +1707,6 @@ function waitForElementDisappear(element,wait,timer){
             const interval = setInterval(() => {
                 const loader = document.querySelector(element);
                 if(loader){
-                    // console.log("loader still visible"); 
                 }else{
                     console.log("loader gone"); 
                     clearInterval(interval);
@@ -2948,45 +1722,6 @@ function waitForElementDisappear(element,wait,timer){
         }, wait);
         
     })
-}
-async function atosAuthListener(){
-    console.log("function running  ============> atosAuthListener"); checkMessenger("function running atosAuthListener");
-    const atosAuthorization = document.querySelectorAll("c-atos-authorization-revamp .table-body");
-    if(atosAuthorization && atosAuthorization.length > 0){
-        console.log("atos found"); checkMessenger("atos found");
-        atosAuthorization.forEach((atos) => {
-            console.log("atos is ",atos)
-            atos.addEventListener("click",async () => {
-                checkMessenger("atos clicked");
-                console.log("atos clicked")
-                let authButtons = await waitForElement("c-atos-authorization-revamp button",5000)
-                    .catch(error => {console.log(error); checkMessenger("auth  buttons not found")})
-                if(authButtons && authButtons.length > 0){
-                    console.log("authButtons are = ",authButtons);
-                    checkMessenger(`authbuttons found ${authButtons.length}`)
-                    authButtons[0].addEventListener("click",async () => {
-                        let authButtons2 = await waitForElement("c-atos-authorization-revamp button",5000)
-                            .catch(error => {console.log(error); checkMessenger("auth  buttons2 not found")})
-                        console.log("authbuttons = ",authButtons2);
-                        checkMessenger(`authbuttons found ${authButtons2.length}`);
-                        if(authButtons2 && authButtons2.length > 0){
-                            authButtons2[1].addEventListener("click",async () => {
-                                const spinner = await waitForElementDisappear("c-atos-authorization-revamp lightning-spinner.slds-spinner_container",2000,600000);
-                                checkMessenger("grabbing data");
-                                getCustomerData2()
-                            })
-                        }
-                    })
-                }
-            })
-
-        })
-    }else{
-        console.log("atos not found"); checkMessenger("atos not found");
-    }
-}
-function checkApprovalReappraisalListener(){
-    const div = document.querySelectorAll("div.tiles div.slds-col.slds-button-shrink")
 }
 function checkApprovalListener(Aid){
     const saveBtn = document.querySelector(".saveBtn.slds-m-bottom_medium");
@@ -3015,19 +1750,13 @@ async function checkAccountAggregator(Aid){
     const AABtn = await waitForElement("lightning-button.accountAggregatorBtn button",5000).catch(error => console.log(error))
     if(AABtn && AABtn.length > 0){
         let btn = AABtn[0]
-        // AABtn[0].scrollIntoView({behavior:"smooth",block:"center"});
         if(btn.disabled === true){
-            // messageToBackground("accountAggregator",{
-            //     type:"Auto",
-            //     Aid:Aid
-            // })
         }else{
             console.log("Account aggregator btn is enabled listener added",btn);
             if(!checkAccountAggregator.listenOnClick){
                 checkAccountAggregator.listenOnClick = async () => {
                     const qrEl = await waitForElement("div.tiles c-account-aggregator c-qr-code-generation",10000).catch(error => console.log(error))
                     if(qrEl && qrEl.length > 0){
-                        // alert("element found");
                         readQr("auto");
                     }
                 }
@@ -3041,7 +1770,6 @@ async function checkAccountAggregator(Aid){
         }
         
     }else{
-        // alert("aa btn not found");
         console.log("AA Btn not found");
     }
     
@@ -3138,7 +1866,6 @@ async function getOpportunityStages(){
 async function getBidStage(){
     console.log("function is running");
     const BidEl = await waitForElement("slot.slds-page-header__title",10000).catch(error => console.log(error))
-    // listenerForInvoice();
     if(BidEl && BidEl.length > 0){
         const bid = BidEl[0].innerText
         console.log("Bid is = ",bid); checkMessenger('Bid found',1,5000)
@@ -3192,7 +1919,6 @@ function getAssetType(category){
     for(type in assetTypes){
         for(cat of assetTypes[type]){
             if(cat === category){
-                // console.log("found assetType : ",type);
                 assetType = type
                 break
             }
@@ -3205,13 +1931,10 @@ function getAssetType(category){
 }
 async function getAssetCategory(asset){
     const smallAsset = asset.toLowerCase()
-    // console.log("getting asset category");
     let found = false
     return new Promise((resolve,reject) => {
         for (let category in assetCategories){
-            // console.log(category);
             assetCategories[category].forEach((cat,inx) => {
-                // console.log(asset," => ",cat);
                 if(smallAsset.includes(cat)){
                     let brand = ""
                     if(category === "mobile" && assetCategories[category][inx].includes("samsung")){
@@ -3234,7 +1957,6 @@ async function getAssetCategory(asset){
             if(found === true){
                 break
             }else{
-                // console.log("continue");
             }
         }
         const data = {
@@ -3278,8 +2000,6 @@ async function changeApproval(string){
             console.log("textarea = ",textAreas[start])
             textAreas[start].value = ""
         }
-        // const cdd = textAreas[1]
-        // const cd = textAreas[2]
         const assetCategory = await getAssetCategory(productName);
         if(assetCategory && assetCategory.category != "not found"){
             const assetType = getAssetType(assetCategory.category);
@@ -3314,16 +2034,6 @@ async function getFMApprovals(){
     const header = waitForElement("div.slds-cell-fixed",3000).catch(error => {checkMessenger("notfound",10,60000)})
     if(header && header.length > 0){
         console.log("header found",header);
-        // checkMessenger("header found",10,3000);
-        // const checkbox = header[1].children[0];
-        // const checkBox = header[1].querySelector("input");
-        // if(checkBox){
-        //     console.log("chheckbox is ",checkBox)
-        //     checkBox.focus();
-        //     checkBox.click();
-        // }else{
-        //     console.log("checkbox not found");
-        // }
         const checkBox = document.querySelectorAll(".slds-checkbox--faux.slds-checkbox_faux");
         if(checkBox && checkBox.length > 0){
             console.log("chheckbox is ",checkBox)
@@ -3362,8 +2072,6 @@ async function addInvoice(){
             if(event.key === "Enter"){
                 const btn = document.querySelector('button[name="SaveEdit"]');
                 if(btn){
-                    // btn.dispatchEvent(new Event("click",{bubbles:true}));
-                    // btn.click();
                     btn.focus();
                     console.log("btn clicked");
                 }else{
@@ -3390,7 +2098,6 @@ async function addInvoice(){
         if(dateEl && dateInput){
             if(dateInput.value || dateInput.value.length > 5){
                 console.log("date already added skipping date addition --------- ",dateInput.value);
-                // alert(`date already added skipping date addition --------- ${dateInput.value}`);
             }else{
                 const newDate = dateEl.innerText.split(" ")[0];
                 dateInput.value = newDate
@@ -3433,7 +2140,6 @@ function lastFourDigits(selector){
     return new Promise(async(resolve,reject) => {
         const tiles = document.querySelectorAll(selector);
         if(tiles){
-            // console.log("tiles are ",tiles);
             let found = false
             for (div of tiles){
                 if(div.innerText.toLowerCase().includes("mobile no")){
@@ -3559,194 +2265,6 @@ async function responsiveSubmit(type,stage){
     }
     
 }
-async function getMarks(){
-    mdivs = document.querySelectorAll("div.question-pnl");
-    let questionCount = 0
-    let right = 0
-    let wrong = 0
-    let section1_Right = 0
-    let section1_Wrong = 0
-    let section2_Right = 0
-    let section2_Wrong = 0
-    let section3_Right = 0
-    let section3_Wrong = 0
-    
-    for(div of mdivs){
-        questionCount = questionCount +1
-        tables = div.querySelectorAll("table table")
-        ans = tables[0].querySelector("tr td.rightAns").innerText.split(".")[0]
-        my = tables[1].children[0].children[1].children[1].innerText
-        const result = ans == my
-        if(result === true){
-            right = right + 1 
-        }else{
-            wrong = wrong + 1
-        }
-        if(questionCount <= 75){
-            if(result === true){
-                section1_Right = section1_Right +1
-            }else{
-                section1_Wrong = section1_Wrong +1
-            }
-        }else if(questionCount <= 150){
-            if(result === true){
-                section2_Right = section2_Right +1
-            }else{
-                section2_Wrong = section2_Wrong +1
-            }
-        }else if(questionCount <= 200){
-            if(result === true){
-                section3_Right = section3_Right +1
-            }else{
-                section3_Wrong = section3_Wrong +1
-            }
-        }
-        
-        
-        console.log(`i wrote ${my} ------ answer = ${ans} => ${result}`)
-    }
-    console.log(`final right is ${right} --- final wrong is ${wrong}` );
-    // console.log(`final wrong is ${wrong}`);
-    console.log(`section1 => {right✅ = ${section1_Right} ----------- wrong ❌ = ${section1_Wrong}}`)
-    console.log(`section2 => {right✅ = ${section2_Right} ----------- wrong ❌ = ${section2_Wrong}}`)
-    console.log(`section3 => {right✅ = ${section3_Right} ----------- wrong ❌ = ${section3_Wrong}}`)
-    alert(`
-        final right is ${right} --- final wrong is ${wrong}\n
-        section1 => {right✅ = ${section1_Right} ----------- wrong ❌ = ${section1_Wrong}}\n
-        section2 => {right✅ = ${section2_Right} ----------- wrong ❌ = ${section2_Wrong}}\n
-        section3 => {right✅ = ${section3_Right} ----------- wrong ❌ = ${section3_Wrong}}\n
-        `)
-}
-async function ReinventSqc(){
-    const menuBtn = document.querySelector("button.breadcrumb-button");
-    if(menuBtn){
-        menuBtn.click()
-        const inv = await waitForElement("div.menu-content",3000);
-        if(inv && inv.length > 0){
-            for (div of inv[0].children){
-                console.log(`Search for invoice => found ((( ${div.innerText} )))`);
-                if(div.innerText.toLowerCase() === "invoice"){
-                    div.click();
-                    const dateInput = await waitForElement('input[type="date"]',3000);
-                    if(dateInput && dateInput.length > 0){
-                        const date = (new Date()).toISOString().split("T")[0]
-                        dateInput[0].value = date
-                        const invInput = document.querySelector('input.mobile-input[type="text"]');
-                        invInput.value = "1227/25/S-"
-                        span = document.querySelector('span[part="indicator"]')
-                        span.addEventListener("click",async () => {
-                            const proceedBtn = await waitForElement("div.modal-body button.proceedBtn",5000);
-                            if(proceedBtn && proceedBtn.length > 0){
-                                proceedBtn[0].click();
-                                const submitBtn = waitForElement("button.proceedBtn.submit-button",3000);
-                                if(submitBtn && submitBtn.length >0){
-                                    submitBtn[0].click();
-                                    const validateBtn = document.querySelector("div.validate-button button.proceedBtn.submit-button");
-                                    validateBtn.click();
-                                    const genAI = document.querySelector("div.docHeader.docHeaderGenAI div.validate-button button.proceedBtn.submit-button");
-                                    genAI.click();
-                                    const sqcBtn = document.querySelector("div.footer.footer-mobile button.proceedBtn.submit-button");
-                                    sqcBtn.click();
-                                }
-                            }
-                        })
-                    }
-                }
-            }
-        }
-    }else{
-        alert("Menu Not found");
-    }
-}
-function panelButton(){
-    const btn = document.createElement("div");
-    btn.classList.add("ContentJS-CommandBtn");
-    document.body.append(btn);
-    btn.innerText = "Sohail"
-}
-// panelButton();
-function insertIframe(){
-    chrome.windows.create(
-    {
-      url: "https://www.bajajfinserv.in/qr-code-web-page?xc=QHKxvc5evFw2L7wxXjFJMKexYrG6ScuxlC3tud23Mcc=",  // or any URL you want
-      type: "popup",
-      width: 400,
-      height: 600,
-      top: 100,
-      left: 100
-    },
-    (newWindow) => {
-      popupWindowId = newWindow.id; // Save ID so we can close later
-      console.log("Popup opened with ID:", popupWindowId);
-    }
-  );
-
-}
-async function assetValidation(){
-    const tiles = await waitForElement("div.tiles",10000);
-    tiles[5].scrollIntoView({
-        behavior: 'smooth',
-        block: 'center'
-    })
-    const label = tiles[5].querySelectorAll("label")
-    label[0].click()
-    label[1].click()
-    await sleep(2000)
-    const input = tiles[5].querySelector('lightning-input[data-id="imeiNumber"] input')
-    input.value = Number(input.value)+1
-    const button = tiles[5].querySelector('button.slds-button.slds-button_neutral');
-    button.click();
-    const statusDiv = tiles[5].querySelector('div[data-id="assetData"]');
-    statusDiv.innerText.includes("Asset Validated");
-    await sleep(3000)
-    // location.reload()
-}
-function getReportData(){
-    const tables = document.querySelectorAll("div.edge-builder-ii table");
-    
-}
-async function fillCategoryDetails(){
-    const popup = document.querySelector("div.popup")
-    const inputs = popup.querySelectorAll("input");
-    const category = inputs[0];
-    const price = inputs[1];
-    const dp = inputs[2];
-    category.value = "PHONE(WEB-MOBILE)"
-    price.value = 50000
-    dp.value = 0
-    const buttons = popup.querySelectorAll("button");
-    const li = popup.querySelector("ul li");
-    await sleep(3000)
-    li?.click()
-    const submit = buttons[1];
-    submit.click();
-}
-async function fillCategoryDetails2(){
-    const popups = await waitForElement("div.popup",60000)
-    if(popups && popups.length > 0){
-        console.log("popup found");
-        const inputs = popups[0].querySelectorAll("input");
-        const category = inputs[0];
-        category.addEventListener("input", (event) => {
-            console.log("event triggered",event.target.value)
-            const lis = popups[0].querySelectorAll("ul li");
-            if(lis && lis.length >0){
-                console.log("li found",lis);
-                lis.forEach(li => {
-                    li.addEventListener("click", () => {
-                        const price = inputs[1];
-                        const dp = inputs[2];
-                        const buttons = popup.querySelectorAll("button");
-                        const submit = buttons[1];
-                        price.value = 50000
-                        dp.value = 0
-                        submit.click();
-                    })
-                }) 
-            }
-        })
-    }
-}
 async function fetchIframeData(){
     const iframe = document.querySelector("iframe");
     iframe.style.height = "100000px"
@@ -3817,7 +2335,6 @@ function downloadJSON(data){
 async function fetchIframeData2(){
     async function makeArray(trs){
         
-        // const lastCell = trs[trs.length -1 ].lastChild
         console.log("table content = ",trs);
         let newTrs = []
         let rowCount = 1
@@ -3851,21 +2368,6 @@ async function fetchIframeData2(){
         })
         
         return newTrs
-        console.log("new table data is = ",newTrs);
-    }
-    function mergeArrays(newTrs1,newTrs2){
-        const index1 = newTrs1[0]
-        const index2 = newTrs2[0].reverse
-        let deleteIndex = null
-        for (value of index1){
-            index2.forEach((val,inx) => {
-                if(val == value || val == ""){
-                    console.log("duplicate or empty value", val);
-                }else{
-                    deleteIndex = inx -1
-                }
-            })
-        }
     }
     const iframe = document.querySelector("iframe");
     iframe.style.height = "100000px"
@@ -3892,15 +2394,10 @@ async function fetchIframeData2(){
     if(newTrs1 && newTrs2){
         downloadJSON(newTrs1);
         downloadJSON(newTrs2)
-        // mergeArrays(newTrs1,newTrs2)
     }
     iframe.style.height = ""
     widgets.children[widgets.children.length - 1].style.height = ""
     alert("both trs added");
-    // const worksheet = XLSX.utils.aoa_to_sheet(newTrsMerged);
-    // const workbook = XLSX.utils.book_new();
-    // XLSX.utils.book_append_sheet(workbook,worksheet,"sheet1");
-    // XLSX.writeFile(workbook,`data.xlsx`)
     
 }
 async function fetchIframeData3(){
@@ -3909,60 +2406,11 @@ async function fetchIframeData3(){
     console.log("iframe height increased");
     let table = iframe.contentDocument.querySelector("table.data-grid-table.data-grid-full-table");
     console.log(table);
-    async function shrinkIframe(){
-        const trss = table.querySelectorAll("tbody tr");
-        for (let tr of trss){
-            tr.style.height = "30px"
-        }
-        console.log("tr shrinked");
-        const divs = table.querySelectorAll("tbody tr div.data-grid-table-cell-box");
-        for (let div of divs){
-            div.style.height = "30px"
-        }
-        console.log("div shrinked");
-    }
     async function hoverOn(item){
         item.scrollIntoView({
             behavior: 'smooth',
             block: 'center'
         })
-    }
-    async function readData(){
-        let trs = table.querySelectorAll("tr");
-        console.log("table content = ",trs);
-        let newTrs = []
-        let rowCount = 1
-        trs.forEach((tr,index) => {
-            console.log("index is = ",index);
-            // console.log(tr.innerText);
-            let newTr = []
-            
-            if(index < 1){
-                console.log("index is ",index);
-                const ths = tr.querySelectorAll("th");
-
-                ths.forEach((th,index) => {
-                    if(index < 1){
-                        newTr.push("Sno");
-                    }else{
-                        span = th.querySelector("span.lightning-table-cell-measure-header-value");
-                        // console.log("span value is ",span);
-                        newTr.push(span?.innerText || "");
-                    }
-                })
-            }else{
-                newTr.push(rowCount);
-                rowCount = rowCount + 1
-                const tds = tr.querySelectorAll("td");
-                for (td of tds){
-                    newTr.push(td.innerText);
-                }
-            }
-            newTrs.push(newTr);
-        })
-        hoverOn(trs[trs.length -1])
-        console.log("new table data is = ",newTrs);
-        return newTrs
     }
     async function downloadFile(newTrs){
         const worksheet = XLSX.utils.aoa_to_sheet(newTrs);
@@ -3970,7 +2418,6 @@ async function fetchIframeData3(){
         XLSX.utils.book_append_sheet(workbook,worksheet,"sheet1");
         XLSX.writeFile(workbook,`data.xlsx`);
     }
-    // await shrinkIframe();
     await sleep("3000")
     async function processData(){
         const times = await prompt("How many times do you want to crawl?");
@@ -3980,7 +2427,6 @@ async function fetchIframeData3(){
         const bidsSkipped = []
         for (let time = 1 ; time <= times; time++){
             await sleep(3000);
-            // const data = await readData();
             const data = []
             const trs = table.querySelectorAll("tr");
             trs.forEach((tr,index) => {
@@ -3994,7 +2440,6 @@ async function fetchIframeData3(){
             })
             mainArray.push(data);
             hoverOn(trs[trs.length -1])
-            // await shrinkIframe();
             
         }
         for (let array of mainArray){
@@ -4002,7 +2447,6 @@ async function fetchIframeData3(){
             for (data of array){
                 const bid = data[1]
                 if(bids.includes(bid)){
-                    // console.log("skipping bid = ",bid);
                     bidsSkipped.push(bid);
                 }else{
                     bids.push(bid);
@@ -4099,7 +2543,6 @@ async function emiProgram(){
             }
         }
     }
-    // calculate()
     function addInputs(){
         const divs = document.querySelectorAll("div.slds-grid.slds-wrap");
         const div = divs[divs.length - 1]
@@ -4203,18 +2646,6 @@ async function summarizeReport(){
     }
     
 }
-async function LYTY(){
-    const iframe = document.querySelector("iframe")
-    const table = iframe.contentDocument.querySelector("table.data-grid-full-table.data-grid-table")
-    const trs = table.querySelectorAll("tr");
-    for (tr of trs){
-        const header = tr[0];
-        const y2026 = Number(tr[3].innerText)
-        const y2025 = Number(tr[2].innerText)
-        const grBills = y2026 - y2025
-        const grPercent = `${((y2026 / y2025) -1 ) * 100}%`
-    }
-}
 async function changeReason(string){
     const textAreas = document.querySelectorAll("textarea[name ='otherDetails']");
     if(textAreas && textAreas.length > 0){
@@ -4225,7 +2656,6 @@ async function changeReason(string){
     }
 }
 async function changeEligibility(task){
-    // Value = prompt("specify value")
     trs = document.querySelectorAll("div.cdLinesDiv table tbody tr");
     balanceLimit = document.querySelectorAll("div.Opportunity-Data div.slds-grid span.Customer-Data-Value")[3]
     cdLTV = trs[0].children[1].children[0]
@@ -4265,7 +2695,6 @@ async function getCommand(){
             input.focus()
             input.addEventListener("input",async () => {
                 if(input.value.length >= 2){
-                    // checkMessenger("2 digits",10,2000);
                     switch(input.value.toUpperCase()){
                         case "00": case "CC":
                             div.remove();
@@ -4273,26 +2702,21 @@ async function getCommand(){
                         case "11": case "IN":
                             div.remove();
                             addInvoice();
-                            // normalSQC();
                             break;
                         case "12": case "KP":
                             div.remove();
                             fetchKycPoiDetails();
-                            // walletLinking("link");
                             break;
                         case "13": case "WO":
                             div.remove();
                             walletLinking("link");
-                            // walletLinking("unlink");
                             break;
                         case "14": case "VA":
                             div.remove();
-                            // fetchKycPoiDetails();
                             validateAgreement();
                             break;
                         case "15": case "SQ":
                             div.remove();
-                            // validateAgreement();
                             normalSQC();
                             break;
                         case "16": case "RD":
@@ -4309,9 +2733,7 @@ async function getCommand(){
                             break;
                         case "19": case "WN":
                             div.remove();
-                            // normalSQC();
                             walletLinking("unlink");
-                            // addInvoice();
                             break;
                         case "10": case "WVS": case "NTBS":
                             div.remove();
@@ -4360,16 +2782,11 @@ async function getCommand(){
                             break
                         case "98": case "ER":
                             div.remove();
-                            // alert("Extension will close now, you can open it again.");
                             sleep(2000);
                             messageToBackground("command","");
                             div.remove();
                             break;
                         case "99": case "EX":
-                            // getMarks();
-                            // insertIframe();
-                            // messageToBackground("insertIframe","random")
-                            // fillCategoryDetails2();
                             emiProgram();
                             div.remove();
                             break;
@@ -4388,25 +2805,14 @@ async function enterPassword(password){
         submit[0].click();
     }
 }
-function reloadHome(){
-    waitForElement("ul.comm-navigation__list li a").then(home => {
-        console.log("home found",home);
-        home[0].addEventListener("click",async () => {
-            await sleep(100);
-            location.reload();
-        },{once:true})
-    })
-}
 
 function waitForElementSinglewithiframe(selector,timeout) {
     return new Promise((resolve, reject) => {
-        // console.log("selector is : ",selector);
         const startTime = Date.now();
         const checkExist = setInterval(() => {
             const element = document.querySelector("iframe").contentDocument.querySelector(selector);
             if (element) {
                 clearInterval(checkExist);
-                // console.log("waitForElement | element found : ",element);
                 resolve(element);
             } else if (Date.now() - startTime > timeout) {
                 clearInterval(checkExist);
@@ -4429,10 +2835,8 @@ function convertBtns(){
                 data = []
                 trs.forEach((tr,ind) => {
                     if(ind === 0 || ind === (trs.length -1)){
-                        // console.log("skipped ",tr)
                     }else{
                         const target = tr.childNodes[index].innerText
-                        // console.log("target is",target)
                         let newTarget = Number(target.replace(/[^0-9.]/g,''))
                         data.push(newTarget)
                     }
@@ -4594,7 +2998,6 @@ async function changPostDoPage(text){
     btn.click();
     waitForElementWithText("div.hamburger-menu div.menu-content div",text.toLowerCase(),5000).then(async element => {
         console.log("element found",element);
-        // await sleep(500);
         element.children[0].click();
     }).catch(error => console.error(error));
 }
@@ -4676,12 +3079,6 @@ async function submitFile(){
         }
     }
 }
-async function constantCheck(){
-    const status = document.querySelector("div.currentScreen").innerText;
-    waitForElementDisappear("lightning-spinner",1000,100000).then(loader => {
-        submitFile();
-    })
-}
 async function invoiceAutomation(btn){
     if(btn){
         console.log("btn found",btn)
@@ -4690,8 +3087,6 @@ async function invoiceAutomation(btn){
         btn.addEventListener("click",async ()=>{
             const invoiceBtn = await waitForElementWithText("div.hamburger-menu div.menu-content div","invoice",5000).catch(error => console.error(error));
             invoiceBtn.addEventListener("click",async (event) => {
-                // const manualBtn = await waitForElementSingle("button.custom-button.manual-button",5000);
-                // manualBtn.click();
                 const dateEl = await waitForElementSingle("input.mobile-input[type='date']",5000);
                 dateEl.value = (new Date).toISOString().split('T')[0];
                 dateEl.dispatchEvent(new Event("input",{bubbles:true}))
@@ -4722,7 +3117,6 @@ function handleListAutomation(event){
     btn.click();
     waitForElementWithText("div.hamburger-menu div.menu-content div",event.target.innerText.toLowerCase(),5000).then(async element => {
         console.log("element found",element);
-        // await sleep(500);
         element.children[0].click();
     }).catch(error => console.error(error));
 }
@@ -4796,7 +3190,6 @@ async function createMenuList(page){
     
 }
 
-// reloadHome();
 let lastUrl
 async function modifyReinventList(url = document.body.baseURI){
     if (document.querySelector("div#contentJS-listBoundary-left") && lastUrl === url){
@@ -4814,7 +3207,6 @@ async function modifyReinventList(url = document.body.baseURI){
     }
     const reinventAutomationPagesList = {
         [keys.search] : {function: searchCustomer2, argument: [], condition: url.includes(keys.search)}, // search page
-        // "/dealercommunityreinvent/s/opportunity/Opportunity/Default" : {function: none, argument: none}, // opportunity list
         [keys.customer] : {function: createMenuList, argument: ["customer"], condition: url.includes(keys.customer)}, // customer details
         [keys.opportunity] : {function: createMenuList, argument: ["opportunity"], condition: url.includes(keys.opportunity) && !url.includes(keys.defaultOpportunities)} // do preparation and post do
     }
@@ -4848,24 +3240,12 @@ chrome.runtime.onMessage.addListener(async (request,sender, sendResponse) => {
         sendResponse({ status: 'Function invoked successfully' });
     }else if(request.action === "fetchData"){
         readQr("command");
-        // assetValidation()
         sendResponse({ status: 'Function invoked successfully' });
     }
-    // else if(request.action === "searchCustomer"){
-    //     // checkMessenger("you are searching for new customer")
-    //     if(permissions.LoginData === true){
-    //         console.log("you are searching for new customer");
-    //         searchCustomer2();
-    //         // removeGyde();
-    //     }else{
-    //         checkMessenger("LoginData permissions declined");
-    //     }
         
-    // }
     else if(request.action === "trackSearchCustomer"){
         console.log("background says : trackSearchCustomer");
         removeGyde();
-        // trackCustomer();
     }else if(request.action === "initiateQrOtp"){
         console.log("background says : initiateQrOtp");
         initiateQrOtp(request.data);
@@ -4935,16 +3315,10 @@ chrome.runtime.onMessage.addListener(async (request,sender, sendResponse) => {
     }else if(request.action === "handleReports"){
         convertBtns();
     }
-    // else if(request.action === "dealerRevampOpportunityPage"){
-    //     createMenuList("opportunity");
-    // }else if(request.action === "dealerRevampCustomerPage"){
-    //     createMenuList("customer");
-    // }
     else if(request.action === "checkReinventAutomationPagesList"){
         console.log("modifying the reinvent features",document.body.baseURI);
         modifyReinventList();
     }else if(request.action === "clusterExecution"){
-        // alert("cluster execution requested");
         const response = await checkConditions();
         sendResponse(response);
     }
