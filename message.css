@@ -209,7 +209,8 @@ input.mobile-input{
 }
 /* hide the side bar when the tab gets narrow (split view or a shrunk window) */
 @media (max-aspect-ratio: 13/10) {
-    .ContentJS-verticalMenuBar{
+    .ContentJS-verticalMenuBar,
+    div.contentJS-listBoundary{
         display: none !important;
     }
 }
