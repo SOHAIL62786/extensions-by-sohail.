@@ -1,26 +1,13 @@
-const P = {
-  C:1
-}
 console.log("Script started");
 let closeTab = false;
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 };
-const productType = {
-  cdd : ["vivo", "oppo", "oneplus", "apple", "iphone", "ipad", "redmi", ""],
-  cd: ["samsung led"],
-  vas: ["partner ew"]
-}
 
 const remindersOnRefresh = {
-  // initiateQragain : {
-  //   phone: 7993967670,
-  //   time: Date.now()
-  // }
 }
 
 function dataBackup() {
-  // console.log("Backup started");
   chrome.storage.local.get(null, function(data) {
     const jsonData = JSON.stringify(data, null, 2); // Pretty-print
     const base64Data = btoa(unescape(encodeURIComponent(jsonData)));
@@ -38,31 +25,6 @@ function dataBackup() {
       }
     });
   });
-}
-function saveImageByBlob(blob){
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    const base64data = reader.result;
-    const filename = "screenshot_" + Date.now() + ".png";
-    chrome.downloads.download(
-      {
-        url: base64data,
-        filename: filename,
-        saveAs: false,
-      },
-      function (downloadId) {
-        if (chrome.runtime.lastError) {
-          console.error(
-            "Error downloading file:",
-            chrome.runtime.lastError
-          );
-        } else {
-          console.log("Download initiated with ID:", downloadId);
-        }
-      }
-    );
-  };
-  reader.readAsDataURL(blob);
 }
 function saveScreenshot(dataUrl) {
   // Convert the data URL to a Blob
@@ -111,26 +73,11 @@ async function addQrCount(){
   }
 }
 const screenshotHistory = {}
-async function customScreenshot(){
-  chrome.tabs.captureVisibleTab(null, { format: "png" }, (dataUrl) => {
-    if (chrome.runtime.lastError) {
-      console.error("error capturing tab : ", chrome.runtime.lastError);
-      return;
-    }
-    saveScreenshot(dataUrl);
-  });
-}
-async function captureFullScreenScreenshot(){
-  
-}
 async function captureScreenshot() {
   await sleep(1000)
   const timeNow = Date.now();
   const timeThen = screenshotHistory.lastCaptured
   const con1 = timeNow - timeThen >= 10000
-  // console.log(`conditions are => `);
-  // console.log(`1. ${!screenshotHistory.lastCaptured}`);
-  // console.log(`2. ${timeNow} - ${timeThen} = ${timeNow - timeThen} => ${con1}`);
   if(!screenshotHistory.lastCaptured || con1){
     chrome.tabs.captureVisibleTab(null, { format: "png" }, (dataUrl) => {
       if (chrome.runtime.lastError) {
@@ -138,7 +85,6 @@ async function captureScreenshot() {
         return;
       }
       screenshotHistory["lastCaptured"] = Date.now();
-      // console.log("screnshot history updated",screenshotHistory);
       addQrCount();
       saveScreenshot(dataUrl);
     });
@@ -195,7 +141,6 @@ function messageToContent(action) {
         console.error("No valid active tab found. to recieve message",action);
         return "failed";
       }
-      // console.log("tabs are : ", tabs)
       // Send a message to the content script in the active tab
       chrome.tabs.sendMessage(tabs[0].id, action, (response) => {
         console.log("message sent to content",action);
@@ -220,37 +165,11 @@ function permissions(){
         }
     })
 }
-const weeks = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
-function daysBetweenDates(date1,date2){
-    const newDate1 = new Date(date1);
-    const newDate2 = new Date(date2);
-    const diffInsec = Math.abs(newDate2 - newDate1);
-    const secsInDay = 1000 * 60 * 60 * 24
-    return diffInsec / secsInDay
-}
 let newPermissions
 permissions().then(data => {
   newPermissions = data
   const date = new Date
   const newDate = date.toISOString().split("T")[0];
-  // const todayDateNumber = newDate.split("-")[2]
-  // const dayToday = weeks[date.getDay()]
-  // const daysfromLastRefreshed = daysBetweenDates(data.lastExtensionRefreshed,newDate);
-  // console.log("daysfromLastRefreshed = ",daysfromLastRefreshed)
-  // if(newPermissions.autoRefresh === true){
-  //   const con1 = data.refreshParameter.howOften === "Daily" && data.lastExtensionRefreshed != newDate
-  //   const con2A = data.refreshParameter.howOften === "Weekly" && data.lastExtensionRefreshed != newDate && dayToday === data.refreshParameter.weekName
-  //   const con2B = data.refreshParameter.howOften === "Weekly" && data.lastExtensionRefreshed != newDate && daysfromLastRefreshed >= 7
-  //   const con2 = con2A || con2B
-  //   const con3A = data.refreshParameter.howOften === "Monthly" && data.lastExtensionRefreshed != newDate && daysfromLastRefreshed >= 31
-  //   const con3B = data.refreshParameter.howOften === "Monthly" && data.lastExtensionRefreshed != newDate && todayDateNumber <= data.refreshParameter.dayNumber
-  //   const con3 = con3A || con3B
-  //   if(con1 || con2 || con3){
-  //       data.lastExtensionRefreshed = newDate;
-  //       commitChanges("permissions",data);
-  //       messageToContent({action:"showAlert",text:"Extension will close now, you can open it again."})
-  //   }
-  // }
   if(data.lastExtensionRefreshed != newDate){
     data.lastExtensionRefreshed = newDate;
     commitChanges("permissions",data);
@@ -263,10 +182,8 @@ function commitChanges(left,right){
   return new Promise((resolve,reject) => {
     chrome.storage.local.set({[left] : right}, function(){
       if(chrome.runtime.lastError){
-      //  console.log("error saving data : ",chrome.runtime.lastError);
         reject("failed");
       } else{
-        // console.log("data saved in : ", left," => ",right);
         
         resolve("success");
       }
@@ -290,39 +207,6 @@ function getLocalData(left){
     })
   })
 }
-async function changePermissions(key,value){
-  const data = await getLocalData("permissions");
-  if(data){
-    data[key] = value
-    commitChanges("permissions",data);
-  }
-}
-async function editpermissions(){
-  const permissions = await getLocalData("permissions");
-  if(permissions){
-    permissions.lastExtensionRefreshed = ""
-    // console.log("new permissions",permissions);
-    commitChanges("permissions",permissions);
-  }
-}
-async function createCustomData(){
-  const bidToAid ={}
-  const localData = await getLocalData("loginData");
-  if(localData){
-    for(Aid in localData){
-      const opportunities = localData[Aid].opportunities;
-      if(opportunities && opportunities.length > 0 && opportunities[0] !== null){
-        console.log(opportunities)
-        for(opp of opportunities){
-          const bid = opp.bid;
-          bidToAid[bid] = Aid
-        }
-      }
-    }
-    console.log(bidToAid)
-    commitChanges("bidToAid",bidToAid)
-  }
-}
 async function setBidToAid(Aid,Bid){
   const data = await getLocalData("bidToAid");
   if(data){
@@ -338,9 +222,7 @@ async function checkAid(data){
     if(oldData){
       let found = false;
       for (date in oldData){
-        // console.log(date);
         for (let exAid of oldData[date]){
-          // console.log(exAid);
           if (exAid == Aid){
             found = true;
             console.log("Aid already there")
@@ -369,20 +251,6 @@ async function checkAid(data){
     }
   })
 }
-async function addReappraisalData(data){
-  console.log("function running || addReappraisalData => : ",data);
-  const Aid = data.Aid
-  
-  const opportunities = data.opportunities;
-  delete data.opportunities;
-  const oldData = await getLocalData("loginData");
-  if(oldData){
-    const AidSection = oldData[Aid];
-    AidSection.push(opportunities);
-
-  }
-
-}
 async function addEtbCardData(data){
   console.log("addEtbCardData : ",data)
   const opportunities = data.opportunities;
@@ -404,21 +272,6 @@ async function addEtbCardData(data){
       }else{
         console.log("new opps are ",opportunities);
         console.log("old opps are ",oldOpp);
-        // opportunities.forEach((newOpp,inx) => {
-        //   setBidToAid(data.Aid,newOpp.bid);
-        //   console.log("newOpp : ",newOpp.bid);
-        //   oldOpp.forEach((opp,index) => {
-        //     console.log("oldOpp : ",opp.bid)
-        //     console.log("condition check : ",newOpp.bid," => ",opp.bid);
-        //     if(newOpp.bid === opp.bid){
-        //       console.log("opp already there");
-        //       const newOpps = {...opp, ...newOpp}
-        //       newOpportunities.push(newOpps);
-        //       oldOpp.splice(index,1);
-        //       opportunities.splice(inx,1);
-        //     }
-        //   })
-        // })
         if(opportunities && opportunities.length > 0 && opportunities[0] !== null){
           
           console.log("opportunities found");
@@ -521,42 +374,7 @@ function addDateData(Aid, oldData, data){
     }
   })
 }
-async function removeDateFromDateData(date){
-  const dateData = await getLocalData("DateToAid");
-  return new Promise((resolve,reject) => {
-    if(dateData[date]){
-      delete dateData[date];
-      commitChanges("DateToAid",dateData).then(result => {
-        resolve(result)
-      })
-    }else{reject("date not found")}
-  })
-}
 
-async function tallyAidToDate(){
-  const AidData = await getLocalData("loginData");
-  const DateData = await getLocalData("DateToAid");
-  if(AidData && DateData){
-    for (let Aid in AidData){
-      const date = AidData[Aid]["date"];
-      if(DateData[date]){
-        console.log("aid in date = ",DateData[date].Aid, " - ",Aid)
-        if(DateData[date].Aid){
-          
-        }else{
-          console.log("sorting Aid : ", Aid)
-          // console.log("waste Aid : ",Aid)
-          // delete AidData[Aid]
-        }
-      }else{
-        console.log("waste Aid : ",Aid)
-        delete AidData[Aid]
-      }
-
-    }
-    commitChanges("loginData",AidData)
-  }
-}
 async function removeAidFromLoginData(Aid){
   const oldData = await getLocalData("loginData");
   return new Promise ((resolve, reject) => {
@@ -565,24 +383,6 @@ async function removeAidFromLoginData(Aid){
       commitChanges("loginData",oldData).then(result => {
         resolve(result)
       }).catch(error => resolve(error))
-    }else{
-      reject("failed")
-    }
-  })
-}
-async function removeAidFromDateData(date,Aid){
-  const oldData = await getLocalData("DateToAid");
-  return new Promise ((resolve, reject) => {
-    if(oldData){
-      const dateSection = oldData[date];
-      console.log("before",dateSection)
-      const index = dateSection.indexOf(Aid);
-      console.log(index)
-      dateSection.splice(index,1);
-      console.log("after",dateSection)
-      const changes = {...oldData, [date] : dateSection}
-      commitChanges("DateToAid",changes)
-      resolve("success")
     }else{
       reject("failed")
     }
@@ -646,32 +446,13 @@ function handleLoginData(data){
     })
   }else if(data.approvalType === "pageRefresh"){
     addEtbCardData(data);
-    // if(data.loginType === "cardCustomer"){
-    //   addEtbCardData(data);
-    // }else if(data.loginType === "reappraisal"){
-    //   console.log("loginType is : reappraisal")
-    //   addReappraisalData(data);
-    // }
   }
 }
-// force speak to content script
-const scriptToContent = () => {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    chrome.scripting.executeScript({
-      target: { tabId: tabs[0].id },
-      func: () => {
-        console.log("message from bg script");
-        alert("background forced this");
-      },
-    });
-  });
-};
 
 
 const retryUrlCheck = {}
 const urlCheck = () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    // console.log("new tab => ",tabs);
     if (
       tabs.lenghth === 0 ||
       !tabs[0].url ||
@@ -696,13 +477,11 @@ const urlCheck = () => {
       }
       return;
     }
-    // console.log("tabs are : ", tabs);
     const url = tabs[0].url;
     const title = tabs[0].title
     const tabId = tabs[0].id
     if (url.startsWith("https://bflconsumer.my.site.com/dealercommunityreinvent")) {
       messageToContent({ action: "checkReinventAutomationPagesList" });
-      // messageToContent({ action: "trackSearchCustomer" });
       if(url.includes("di-report")){
         console.log("you are on opportunity page");
         messageToContent({ action: "di-report" });
@@ -830,7 +609,6 @@ async function changeOpportunityStages(data){
                 entry.bidStage.toLowerCase().includes("cancelled")){
                   stagesRequired[entry.bid] = false;
                 }else{
-                  // console.log("condition not met")
                 }
                 console.log("change data",opp);
                 found = true
@@ -868,120 +646,7 @@ async function addCustomInform(data){
   const changes = {...loginData,...newData}
   commitChanges("loginData",changes);
 }
-async function addAidSearchHistory(){
-  const loginData = await getLocalData("loginData");
-  if(loginData){
-    console.log("aids = ",loginData.length);
-    const Aids = {};
-    const dates = []
-    for(let Aid in loginData){
-      const date = loginData[Aid].date;
-      if(date){
-        const isoDate = date.split("_").reverse().join("-");
-        dates.push(isoDate);
-        Aids[Aid] = [date];
-      }
-    }
-    console.log(dates);
-    console.log(Aids);
-  }
-}
-function authenticateUser(callback) {
-  chrome.identity.getAuthToken({ interactive: true ,scopes: ['https://www.googleapis.com/auth/drive.file']}, function (token) {
-      if (chrome.runtime.lastError) {
-          console.error(chrome.runtime.lastError);
-          return;
-      }
-      callback(token);
-  });
-}
-function authenticateUser2(){
-  chrome.identity.launchWebAuthFlow({
-    url: 'https://accounts.google.com/o/oauth2/auth?' + new URLSearchParams({
-      client_id: '416225647660-lhq3blaguc8ai02al5tfjkhklo3lmu4g.apps.googleusercontent.com',
-      response_type: 'token',
-      redirect_uri: 'https://mkpgpdfbgghjlplfeokfcaoenebmhbba.chromiumapp.org',
-      scope: 'https://www.googleapis.com/auth/drive.file',
-      prompt: 'consent'
-    }),
-    interactive: true
-  }, (responseUrl) => {
-    console.log("response url =",responseUrl);
-    const token = responseUrl.split('access_token=')[1];
-    console.log("token =",token);
-    // Extract access token from responseUrl (e.g., responseUrl.split('access_token=')[1])
-  });
-}
-function authenticateUserWithoutPrompt(){
-  chrome.identity.launchWebAuthFlow({
-    url: 'https://accounts.google.com/o/oauth2/auth?' + new URLSearchParams({
-      client_id: '416225647660-lhq3blaguc8ai02al5tfjkhklo3lmu4g.apps.googleusercontent.com',
-      response_type: 'token',
-      redirect_uri: 'https://mkpgpdfbgghjlplfeokfcaoenebmhbba.chromiumapp.org',
-      scope: 'https://www.googleapis.com/auth/drive.file',
-      prompt: 'none'
-    }),
-    interactive: false
-  }, (responseUrl) => {
-    console.log("response url =",responseUrl);
-    const token = responseUrl.split('access_token=')[1];
-    console.log("token =",token);
-    // Extract access token from responseUrl (e.g., responseUrl.split('access_token=')[1])
-  });
-}
-function uploadDataToDrive(fileName, jsonData) {
-  authenticateUser(function (token) {
-      fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
-          method: "POST",
-          headers: {
-              "Authorization": "Bearer " + token,
-              "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-              name: fileName,
-              mimeType: "application/json",
-              content: jsonData
-          })
-      })
-      .then(response => response.json())
-      .then(data => console.log("File uploaded:", data))
-      .catch(error => console.error("Error uploading file:", error));
-  });
-}
-// uploadDataToDrive("sharedData.json", JSON.stringify({ message: "Hello from PC1" }));
-function getSharedDataFromDrive(fileId) {
-  authenticateUser(function (token) {
-      fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-          method: "GET",
-          headers: {
-              "Authorization": "Bearer " + token
-          }
-      })
-      .then(response => response.json())
-      .then(data => console.log("Shared Data:", data))
-      .catch(error => console.error("Error fetching file:", error));
-  });
-}
 
-function findSharedFile(fileName) {
-  authenticateUser(function (token) {
-      fetch("https://www.googleapis.com/drive/v3/files?q=name='" + fileName + "'", {
-          method: "GET",
-          headers: {
-              "Authorization": "Bearer " + token
-          }
-      })
-      .then(response => response.json())
-      .then(data => {
-          if (data.files.length > 0) {
-              getSharedDataFromDrive(data.files[0].id);
-          } else {
-              console.log("File not found");
-          }
-      })
-      .catch(error => console.error("Error finding file:", error));
-  });
-}
 function handleDownloading(request){
   if(request === "database"){
     dataBackup();
@@ -1070,12 +735,6 @@ async function decodeQR(message) {
     }
   });
 }
-let autoAccountAggregator = {
-  "Aid":{
-    url:"url",
-
-  }
-}
 function messageToContentOnTabid(action,tabId) {
   return new Promise((resolve) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -1146,32 +805,6 @@ function addDynamoData(data){
   .then(response => response.json())
   .then(data => console.log("Data added in db",data))
   .catch(console.error);
-
-}
-// addDynamoData({
-//   date : "2026-01-05",
-//   time : "20:47:26",
-//   mobile : "8919558071",
-//   customerName : "Mohammed abdul sohail",
-//   customerType : "Ntb",
-//   aid : "A1234567",
-//   fosName : "MOHAMMED SOHAIL",
-//   transactionID : `2026-01-05-8919558071-MOHAMMED SOHAIL`
-// })
-function writeDataToDB(){
-  console.log("sending data to db .....");
-  fetch("https://64zo080cx7.execute-api.ap-northeast-3.amazonaws.com/write", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      date:(new Date).toISOString().split("T")[0],
-      fosname:"MOHAMMED SOHAIL",
-      data:["sohail","moiz","junaid"]
-    })
-  })
-    .then(res => res.json())
-    .then(data => console.log("✅ Write Success:", data))
-    .catch(err => console.error("❌ Error:", err));
 
 }
 async function downloadRepoFiles(owner, repo, branch, folder) {
@@ -1302,14 +935,12 @@ chrome.commands.onCommand.addListener((command) => {
     messageToContent({ action: "SQC" });
   } else if (command === "fetchKycPoiDetails") {
     console.log("command passes : ", command);
-    // messageToContent({ action: "fetchKycPoiDetails" });
     messageToContent({action:"initiateQragain",phone:8919558073});
   } else if (command === "getCommand") {
     console.log("command passes : ", command);
     messageToContent({ action: "getCommand" });
   } else if (command === "fetchData") {
     console.log("command passes : ", command);
-    // messageToContent({ action: "fetchData" });
     clusterSubmit();
   }
 });
@@ -1317,31 +948,22 @@ chrome.commands.onCommand.addListener((command) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("Message Recieved in background: ", message.type,message);
   if (message.from === "content") {
-    // console.log("from content");
-    // chrome.runtime.sendMessage({ type: "toContent", text: "SOME DATA FOR content"},(response) => {
-    //     console.log("response from content : ", response)
-    // });
     if (message.type === "greeting") {
-      // console.log(message);
       sendResponse({ reply: "Message from bg.js -> constent.js" });
     } else if (message.type === "info") {
       if (message.text === "page_reloaded") {
         urlCheck();
       }
-      // console.log(message);
       sendResponse({ reply: "Message from bg.js -> constent.js" });
     } else if (message.type === "inform"){
       addCustomInform(message.text)
     } else if (message.type === "data") {
-      // console.log("content sent message :", message);
       const response = handleData(message.text);
       console.log("sending response : ",response)
       sendResponse(response)
     } else if (message.type === "command") {
-      // console.log("content sent command :", message);
       captureScreenshot();
     } else if (message.type === "loginData"){
-      // console.log("call function handleLoginData");
       handleLoginData(message.text);
     } else if(message.type === "opportunityStages"){
       changeOpportunityStages(message.text);
@@ -1356,7 +978,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         })
       }
       chrome.tabs.onUpdated.addListener(removeQRTab);
-      // console.log("close tab is ",closeTab);
     } else if(message.type === "extensionReload"){
       messageToContent({action:"showAlert",text:"Extension will close now, you can open it again."}).then(response => {
         chrome.runtime.reload();
@@ -1379,6 +1000,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       insertIframe();
     }else if(message.type === "dynamoData"){
       addDynamoData(message.text);
+    }else if(message.type === "captureTab"){
+      // qrLink.js: screenshot of the visible tab, used for QR images the page does not let it read
+      chrome.tabs.captureVisibleTab(sender.tab ? sender.tab.windowId : null, { format: "png" }, (dataUrl) => {
+        sendResponse({ dataUrl: chrome.runtime.lastError ? null : dataUrl });
+      });
+      return true;
+    }else if(message.type === "openTab"){
+      // qrLink.js: open a decoded QR link in a new tab next to the current one
+      let allowed = false;
+      try {
+        const protocol = new URL(message.text?.url).protocol;
+        allowed = protocol === "http:" || protocol === "https:";
+      } catch (error) {
+        allowed = false;
+      }
+      if(!allowed){
+        sendResponse({ ok: false });
+        return;
+      }
+      const options = { url: message.text.url, active: true };
+      if(sender.tab){
+        options.index = sender.tab.index + 1;
+        options.openerTabId = sender.tab.id;
+      }
+      chrome.tabs.create(options, (tab) => {
+        sendResponse({ ok: Boolean(tab) && !chrome.runtime.lastError });
+      });
+      return true;
     }
   } else if (message.from === "popup") {
     if(message.type === "downloadRepo"){
@@ -1388,7 +1037,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
 
     }
-    // console.log("from popup");
     chrome.runtime.sendMessage(
       { type: "toPopup", text: "SOME DATA FOR POPUP" },
       (response) => {
@@ -1406,7 +1054,6 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 chrome.tabs.onActivated.addListener((activeInfo) => {
   console.log('tab activated : ',activeInfo);
   chrome.tabs.get(activeInfo.tabId,(tab) => {
-    // console.log("tab is ",tab);
     urlCheck();
   })
 })

@@ -46,11 +46,11 @@
         "matches": ["*://bflconsumer.my.site.com/*",
         "*://*.bajajfinserv.in/*",
         "*://bfin.in/*"],
-        "js": ["jsQR.js","content.js","newcontent.js"]
+        "js": ["jsQR.js","content.js","qrLink.js"]
       },
       { 
         "matches": ["https://bflconsumer.my.site.com/dealerRevamp/s/report/*"],
-        "js": ["xlsx.full.min.js","iframeContent.js"],
+        "js": ["xlsx.full.min.js"],
         "all_frames": true
       }
     ],
@@ -59,8 +59,7 @@
             "resources": [
                 "message.html","message.css","jsQR.js",
                 "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
-                "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css",
-                "aws-sdk.min.js"
+                "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
             ],
             "matches": ["<all_urls>"]
         }
