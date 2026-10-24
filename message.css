@@ -207,12 +207,10 @@ input.mobile-input{
     top: 20%;
     height: 30%;
 }
-/* hide the side bar when the tab gets narrow (split view or a shrunk window) */
-@media (max-aspect-ratio: 13/10) {
-    .ContentJS-verticalMenuBar,
-    div.contentJS-listBoundary{
-        display: none !important;
-    }
+/* side panels show only at the full-screen aspect ratio (class set by content.js) */
+html.contentJS-notFullScreen .ContentJS-verticalMenuBar,
+html.contentJS-notFullScreen div.contentJS-listBoundary{
+    display: none !important;
 }
 .CONTENT-JS-foreignInput{
     height: 30px;
