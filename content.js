@@ -58,7 +58,6 @@ function getLocalData(left){
           console.error("error fetching data : ",chrome.runtime.lastError)
         }else if (request[left] === undefined){
           console.log("no data found");
-          commitChanges(left,{});
           resolve({})
         }else{
           resolve(request[left]);
@@ -88,12 +87,6 @@ async function checkMessenger(message, priority = 1,time = 10000){
             if(specificElement){
                 specificElement.addEventListener("click",specificElement.remove());
                 showMessage(message,time);
-            }else{
-                // content.js
-                addHtmlCss();
-                setTimeout( ()=> {
-                    showMessage(message,time)
-                },1000)
             }
         }else{
             console.error("message priority is too low");
@@ -215,9 +208,6 @@ function grabNumber2(){
                 
             }
                 
-            if(!grabNumber.listener){
-                grabNumber.listener = () => listenSearchBtn("Qr");
-            }
             if(!document.querySelector("span#contentjs-phoneNumber-Counter")){
                 checkMessenger("adding number counter",1,3000);
                 const cardInput = await waitForElement("div.mobile-input-container label span");
@@ -253,13 +243,8 @@ function grabNumber2(){
                 console.log("number counter already exists");
             }
 
-            searchBtn.removeEventListener("click",grabNumber.listener);
-            checkMessenger("Listener removed",10,3000);
-            searchBtn.addEventListener("click",grabNumber.listener);
-            checkMessenger("Listener added",10,3000);
             removeListener.addEventListener("click", () => {
                 checkMessenger("Qr Otp Turned Off",10,2000);
-                searchBtn.removeEventListener("click", grabNumber.listener);
                 numInput.style.backgroundColor = "white"
                 removeListener.remove();
                 const num = numInput.value
@@ -311,22 +296,6 @@ async function searchCustomer2(){
             };
             messageToBackground("data",data);
             console.log("qr request sent to background : ",data)
-        }
-        const step1 = await dataExtractStep1(resolveData);
-        if(step1){
-            console.log("searchCustomer | returnData => ",step1);
-            // -------------- Date to Aid ----------------
-            const oldData1 = await getLocalData("DATETOAID");
-            if(oldData1){
-                const changes = {...oldData1, [step1.date] : step1.Aid}
-                commitChanges("DATETOAID",changes);
-            }
-            // -------------- Aid to Details --------------
-            const oldData2 = await getLocalData("AIDTODATA");
-            if(oldData2){
-                const changes = {...oldData2, [step1.Aid] : step1}
-                commitChanges("AIDTODATA",changes);
-            }
         }
     }
 }                                            
@@ -504,74 +473,13 @@ async function getCommand(){
                         case "00": case "CC":
                             div.remove();
                             break;
-                        case "11": case "IN":
-                            div.remove();
-                            addInvoice();
-                            break;
-                        case "12": case "KP":
-                            div.remove();
-                            fetchKycPoiDetails();
-                            break;
-                        case "13": case "WO":
-                            div.remove();
-                            walletLinking("link");
-                            break;
-                        case "14": case "VA":
-                            div.remove();
-                            validateAgreement();
-                            break;
-                        case "15": case "SQ":
-                            div.remove();
-                            normalSQC();
-                            break;
                         case "16": case "RD":
                             div.remove();
                             messageToBackground("info","page_reloaded");
                             break;
-                        case "17": case "NA":
-                            div.remove();
-                            changeApproval("Not Approved");
-                            break;
-                        case "18": case "FM":
-                            div.remove();
-                            getFMApprovals();
-                            break;
-                        case "19": case "WN":
-                            div.remove();
-                            walletLinking("unlink");
-                            break;
-                        case "10": case "WVS": case "NTBS":
-                            div.remove();
-                            responsiveSubmit("NTB");
-                            break;
-                        case "20": case "KVS": case "ETBS":
-                            div.remove();
-                            responsiveSubmit("ETB",2);
-                            break;
-                        case "21": case "PL":
-                            div.remove();
-                            changeReason("phoneLocking");
-                            break;
-                        case "22": case "LM":
-                            div.remove();
-                            changeEligibility("limitMatch")
-                            break;
                         case "79": case "SD":
                             div.remove();
                             getschemedata();
-                            break;
-                        case "80": case "DD":
-                            div.remove();
-                            fetchIframeData();
-                            break;
-
-                        case "81": case "D2":
-                            div.remove();
-                            fetchIframeData2();
-                            break;
-                        case "83": case "D3":
-                            div.remove();
-                            fetchIframeData3();
                             break;
                         case "84": case "SR":
                             div.remove();
@@ -589,10 +497,6 @@ async function getCommand(){
                             div.remove();
                             sleep(2000);
                             messageToBackground("command","");
-                            div.remove();
-                            break;
-                        case "99": case "EX":
-                            emiProgram();
                             div.remove();
                             break;
                     }
@@ -1025,10 +929,6 @@ chrome.runtime.onMessage.addListener(async (request,sender, sendResponse) => {
         checkMessenger("Command request | Submit For QC",10,200);
         submitFile();
         sendResponse({ status: 'Function invoked successfully' });
-    }else if(request.action === "fetchKycPoiDetails"){
-        checkMessenger("Command request | get Kyc Poi",10,3000)
-        fetchKycPoiDetails();
-        sendResponse({ status: 'Function invoked successfully' });
     }else if(request.action === "getCommand"){
         checkMessenger("Command request | getCommand",9,3000)
         getCommand();
@@ -1059,10 +959,6 @@ chrome.runtime.onMessage.addListener(async (request,sender, sendResponse) => {
     }else if(request.action === "showAlert"){
         const response = alert(request.text);
         messageToBackground("extensionReload2");
-    }else if(request.action === "responsiveSubmit"){
-        responsiveSubmit(request.type,request.stage);
-    }else if(request.action === "getTabCount"){
-        getTabCount();
     }else if(request.action === "di-report"){
         handleDiReport();
     }else if(request.action === "handleReports"){
