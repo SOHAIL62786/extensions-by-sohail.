@@ -27,16 +27,6 @@ if(!preVbar){
 
 }
 
-const gmdElements = [
-    "div.slds-checkbox label[for*='checkbox-unique-id-100'] span.slds-checkbox_faux",
-    "div.slds-checkbox label[for*='checkbox-unique-id-101'] span.slds-checkbox_faux",
-    "div.slds-checkbox label[for*='checkbox-unique-id-102'] span.slds-checkbox_faux",
-    "div.slds-checkbox label[for*='checkbox-unique-id-103'] span.slds-checkbox_faux",
-    "div.slds-checkbox label[for*='checkbox-unique-id-104'] span.slds-checkbox_faux",
-    "div.slds-checkbox label[for*='checkbox-unique-id-105'] span.slds-checkbox_faux",
-    "div.slds-checkbox label[for*='checkbox-unique-id-106'] span.slds-checkbox_faux",
-    "div.slds-checkbox label[for*='checkbox-unique-id-107'] span.slds-checkbox_faux"
-]
 let permissions = null
 function getPermissions(){
     return new Promise(async (resolve,reject) => {
@@ -219,11 +209,6 @@ async function wayToSQC(intention = "submitForQc"){
             });
         }).catch(error => console.log(error))
     }
-};
-// returns false if element is not clicked
-function tickCheck(element){
-    const afterStyle = window.getComputedStyle(element,'::after')
-    return afterStyle.content && afterStyle.content != 'none' && afterStyle.content != ''
 };
 async function closeMessenger(){
     const closeButton = document.querySelector(".contentJS-close");
@@ -434,27 +419,6 @@ async function addPoiData(poiData,anyReminder){
         }
     }else{console.log("something went wrong");checkMessenger("something went wrong");}
 }
-async function customerPhotoSection(){
-    return new Promise(async (resolve,reject) => {
-        const custPhoto = document.querySelector("li a[title='Customer Photo']");
-        if(custPhoto){
-            custPhoto.click();
-            console.log("cust photo element clicked",custPhoto);
-        }else{
-            console.log("cust photo element not found");
-        }
-        const CustomerPhotoSec = "div.js-tabset.uiTabset--base.uiTabset--default.uiTabset.forceCommunityTabset c-customer-photo div div";
-        const elements = await waitForElement(CustomerPhotoSec,5000).catch(error => checkMessenger("Kyc poi details Not needed.",10,5000))
-        if(elements && elements.length > 0){
-            console.log("waitForElement (promise) | : ",elements)
-            console.log("fetching poi details"); checkMessenger("fetching poi details",9,2000);
-            resolve("success")
-        }else{
-            console.log("waitForElement (promise) | : ");
-        }
-    })
-    
-}
 async function fetchKycPoiDetails(){
     const custPhoto = document.querySelector("li a[title='Customer Photo']");
     if(custPhoto){
@@ -481,81 +445,6 @@ async function fetchKycPoiDetails(){
     
 
 };
-async function listenerSubmitSqc(){
-    checkMessenger("waiting for linking status",10,3000)
-    waitForError("div.toastContainer","not linked",10000).then(async error => {
-        await closeSQC()
-        await sleep(1000)
-        await walletLinking()
-        await sleep(1000)
-        await normalSQC()
-    }).catch(error => {
-        checkMessenger("error not found",3,2000);
-    })
-    waitForError("div.toastContainer","kyc poi type",10000).then(async error => {
-        const poiData = await getPOIData();
-        if(poiData){
-            await customerPhotoSection().then(error => {
-                addPoiData(poiData,"remindForQC");
-            })
-        }else{
-            checkMessenger("something went wrong",10,2000);
-            console.log("poi data not found");
-        }
-        
-    }).catch(error => console.log(error));
-}
-// checks all the suggested boxes in a panel and the remaining ones
-async function checkTheBoxes(element){
-    console.log("element is : ",element)
-    console.log("length is = ",element.length)
-
-    for (el of element){
-        await el.click();
-    }
-    for(el of gmdElements){
-        element = document.querySelector(el);
-        console.log("gmd element is : ",element)
-        if(element){
-            CLICK = tickCheck(element)
-            if(CLICK === false){
-                element.click();
-                console.log("gmdCheckboxes clicked")
-            }else{console.log("element is already clicked")}
-            
-        }else{console.log("gmd element not found")}
-    }
-    submitButton = document.querySelector('c-submit-for-qc div.modal__container lightning-button button[type="submit"]');
-    if (submitButton && submitButton.disabled != true){
-        console.log(submitButton)
-        submitButton.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-        })
-        submitButton.addEventListener("click",listenerSubmitSqc);
-        submitButton.click()
-        console.log("submitButton clicked");
-        
-    }else{console.log("button not found")}
-};
-
-// performs main task of submitting the file to qc
-const submitForQC = async () => {
-    checkBoxes = "div.modal__container .slds-m-around_small input"
-    checkBoxes1 = "div.modal__container span.slds-checkbox_faux"
-    checkBoxes2 = "div.slds-checkbox span.slds-checkbox_faux"
-    pEl1 = "div.slds-checkbox label[for='checkbox-unique-id-100-129']"
-    waitForElement(checkBoxes,5000)
-        .then(element => {
-            console.log('Element found:', element);
-            setTimeout(function() {checkTheBoxes(element)},1000)
-        })
-        .catch(err => {
-            console.error(err);
-        });
-};
-
-
 function addExternalCss(){
     const cssLink = chrome.runtime.getURL("message.css"); // Ensure the correct path
     const link = document.createElement("link");
@@ -611,7 +500,6 @@ function addHtmlCss(){
 async function normalSQC(){
     if(permissions.sqc === true){
         await wayToSQC();
-        await submitForQC();
         await closeMessenger();
     }else{
         checkMessenger("submit for qc not allowed",10,2000)
