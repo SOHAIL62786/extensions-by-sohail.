@@ -1025,7 +1025,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         options.openerTabId = sender.tab.id;
       }
       const plainTab = () => {
+        skipAutoSplit = true;
         chrome.tabs.create(options, (tab) => {
+          skipAutoSplit = false;
           sendResponse({ ok: Boolean(tab) && !chrome.runtime.lastError });
         });
       };
@@ -1036,7 +1038,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         && (sender.tab.splitViewId === undefined || sender.tab.splitViewId === -1);
       if(canSplit){
         try {
+          skipAutoSplit = true;
           chrome.tabs.create({ ...options, splitWithTabId: sender.tab.id }, (tab) => {
+            skipAutoSplit = false;
             if(chrome.runtime.lastError || !tab){
               plainTab();
             } else {
@@ -1065,6 +1069,36 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log("response from popup : ", response);
       }
     );
+  }
+});
+// Every new tab opened from a page of this workflow (target=_blank links, window.open, ...)
+// is placed next to the tab it came from and joined into Split View (Chrome 155+).
+// Older Chrome, an opener that is already split, or other windows/pinned/grouped states: tab opens normally.
+let skipAutoSplit = false;
+const SPLIT_HOSTS = /^https?:\/\/(bflconsumer\.my\.site\.com|([^/]+\.)?bajajfinserv\.in|bfin\.in)(\/|$)/;
+chrome.tabs.onCreated.addListener(async (tab) => {
+  if(skipAutoSplit || typeof chrome.tabs.createSplit !== "function" || tab.openerTabId === undefined){
+    return;
+  }
+  try {
+    const opener = await chrome.tabs.get(tab.openerTabId);
+    const current = await chrome.tabs.get(tab.id);
+    const isSplit = (t) => t.splitViewId !== undefined && t.splitViewId !== -1;
+    if(!SPLIT_HOSTS.test(opener.url || "") || isSplit(opener) || isSplit(current)){
+      return;
+    }
+    if(opener.windowId !== current.windowId || opener.pinned !== current.pinned || opener.groupId !== current.groupId){
+      return;
+    }
+    if(current.index !== opener.index + 1){
+      await chrome.tabs.move(current.id, { index: current.index > opener.index ? opener.index + 1 : opener.index });
+    }
+    const moved = await chrome.tabs.get(current.id);
+    const left = moved.index > opener.index ? opener.id : moved.id;
+    const right = left === opener.id ? moved.id : opener.id;
+    await chrome.tabs.createSplit([left, right]);
+  } catch (error) {
+    console.log("auto split skipped :", error);
   }
 });
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
