@@ -1,5 +1,15 @@
 console.dir(document.body.baseURI);
 
+// Side panels only at the full-screen aspect ratio: hide them when the tab is
+// clearly narrower than the screen (split view or a shrunk window).
+function updateFullScreenClass(){
+    const screenRatio = screen.width / screen.height;
+    const tabRatio = window.innerWidth / window.innerHeight;
+    document.documentElement.classList.toggle("contentJS-notFullScreen", tabRatio < screenRatio * 0.9);
+}
+updateFullScreenClass();
+window.addEventListener("resize", updateFullScreenClass);
+
 const preVbar = document.querySelector("div.ContentJS-verticalMenuBar");
 if(!preVbar){
     const verticalMenuBar = document.createElement("div");
