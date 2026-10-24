@@ -1024,9 +1024,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         options.index = sender.tab.index + 1;
         options.openerTabId = sender.tab.id;
       }
-      chrome.tabs.create(options, (tab) => {
-        sendResponse({ ok: Boolean(tab) && !chrome.runtime.lastError });
-      });
+      const plainTab = () => {
+        chrome.tabs.create(options, (tab) => {
+          sendResponse({ ok: Boolean(tab) && !chrome.runtime.lastError });
+        });
+      };
+      // Chrome 155+: open the link in Split View beside the current tab.
+      // Needs a tab that is not already split; otherwise (or on older Chrome) a normal tab is used.
+      const canSplit = typeof chrome.tabs.createSplit === "function"
+        && sender.tab
+        && (sender.tab.splitViewId === undefined || sender.tab.splitViewId === -1);
+      if(canSplit){
+        try {
+          chrome.tabs.create({ ...options, splitWithTabId: sender.tab.id }, (tab) => {
+            if(chrome.runtime.lastError || !tab){
+              plainTab();
+            } else {
+              sendResponse({ ok: true, split: true });
+            }
+          });
+        } catch (error) {
+          plainTab();
+        }
+      } else {
+        plainTab();
+      }
       return true;
     }
   } else if (message.from === "popup") {
