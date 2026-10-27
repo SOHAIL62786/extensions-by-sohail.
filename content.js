@@ -150,121 +150,6 @@ function addExternalCss(){
     link.href = cssLink;
     document.head.appendChild(link);
 }
-async function createListenerEl(){
-    const removeListener = document.createElement("span");
-    removeListener.style.width = "30px";
-    removeListener.style.padding = "0px";
-    removeListener.style.border = "none";
-    removeListener.style.background = "none";
-    removeListener.style.fontSize = "18px";
-    removeListener.setAttribute("id","removeListener-content-js")
-    removeListener.innerText = "❌";
-    removeListener.style.cursor = "pointer"
-    return removeListener
-}
-function grabNumber2(){
-    return new Promise (async (resolve,reject) => {
-        const removeListener = await createListenerEl()
-        const numInput = document.querySelector("input.mobile-input");
-        const searchBtn = document.querySelector("button.proceedBtn");
-        if(numInput && searchBtn){
-            if(permissions.qrScans === true){
-                numInput.style.backgroundColor = "#c7f9cc"
-            }else{
-                numInput.style.backgroundColor = "lightskyblue"
-            }
-            
-            const parent = searchBtn.parentNode;
-            const oldRemoveBtn = document.querySelector("span#removeListener-content-js");
-            if(oldRemoveBtn){
-                oldRemoveBtn.remove();
-                console.log("oldRemoveBtn removed");
-                checkMessenger("button removed",10,3000)
-            }
-            if(permissions.qrScans === true){
-                parent.prepend(removeListener);
-            }
-            console.log("numInput found",numInput);console.log("searchBtn found",searchBtn);
-            async function listenSearchBtn(Action){
-                waitForElement("p.customerName",300000).then(element => {
-                    const num = numInput.value;
-                    try {
-                        navigator.clipboard.writeText(num);
-                        console.log(`Copied! ${num}`);
-                    } catch (e) {
-                        console.error('Clipboard failed:', e);
-                    }
-                    const resolveData = {
-                        "num": num,
-                        "searchBtn": searchBtn,
-                        "action": Action
-                    }
-                    console.log("searchBtn clicked"); checkMessenger("searchBtn clicked");
-                    if(num.length === 10){
-                        console.log("number captured : ",num);
-                        resolve(resolveData);
-                    }
-                })
-                
-            }
-                
-            if(!document.querySelector("span#contentjs-phoneNumber-Counter")){
-                checkMessenger("adding number counter",1,3000);
-                const cardInput = await waitForElement("div.mobile-input-container label span");
-                if(numInput && cardInput && cardInput.length > 0){
-                    const span = document.createElement("span");
-                    span.id = "contentjs-phoneNumber-Counter"
-                    cardInput[0].after(span);
-                    const span2 = document.createElement("span");
-                    span2.id = "contentjs-phoneNumber-Counter-slider"
-                    numInput.parentElement.append(span2)
-                    numInput.addEventListener("input",()=>{
-                        span.innerText = numInput.value.length
-                        span2.style.width = `${Number(numInput.value.length) * 10}%`
-                        if(numInput.value.length < 10){
-                            span.style.backgroundColor = "lightsalmon";
-                            span2.style.borderColor = "lightsalmon"
-                        }else if(numInput.value.length === 10){
-                            span.style.backgroundColor = "lightblue";
-                            span2.style.borderColor = "#085C97"
-                        }
-                    });
-                    numInput.addEventListener("keydown",(event) => {
-                        if(event.key === "Enter"){
-                            console.log("phone number entered")
-                            searchBtn.click();
-                        }
-                    })
-                    checkMessenger("number counter added",1,3000);
-                }else{
-                    console.log("nothing found");
-                }
-            }else{
-                console.log("number counter already exists");
-            }
-
-            removeListener.addEventListener("click", () => {
-                checkMessenger("Qr Otp Turned Off",10,2000);
-                numInput.style.backgroundColor = "white"
-                removeListener.remove();
-                const num = numInput.value
-                searchBtn.addEventListener("click",() => {
-                    checkMessenger("submitBtn Clicked");
-
-                    listenSearchBtn("noQr");
-                    checkMessenger("No qr");
-                })
-            })
-        }else{
-            console.log("numInput not found")
-            checkMessenger("unable to capture data, please refresh the page",10,2000);
-            reject(new Error("input not found"))
-        }
-    
-    })
-    
-    
-}
 function waitForElementSingle(selector,timeout) {
     return new Promise((resolve, reject) => {
         const startTime = Date.now();
@@ -280,26 +165,6 @@ function waitForElementSingle(selector,timeout) {
         }, 100); // Check every 100ms
     });
 };
-async function searchCustomer2(){
-    console.log("function called");
-    const numInput = await waitForElement("input.mobile-input",10000).catch(error => console.log(error))
-    const resolveData = await grabNumber2();
-
-    if(resolveData){
-        console.log("searchCustomer | resolveData => ",resolveData);
-        console.log("searchCustomer | num => ",resolveData.num);
-        if(resolveData.action === "Qr"){
-            const data = {
-                mobileNumber: resolveData.num,
-                action: "openQr",
-                url: permissions.qrUrl || "https://bfin.in/?3Q2VRXD8"
-            };
-            messageToBackground("data",data);
-            console.log("qr request sent to background : ",data)
-        }
-    }
-}                                            
-duplicateScreenshots = false
 
 function waitForError(element,include,timer = 5000,intention = "text"){
     return new Promise(async (resolve,reject) => {
@@ -381,19 +246,6 @@ function addCommandWall(selector){
     
 };
 
-
-function downloadJSON(data){
-    const jsonStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonStr], {type: "application/json"});
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "data.json"
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-}
 
 async function summarizeReport(){
     const iframe = document.querySelector("iframe")
@@ -899,13 +751,11 @@ async function modifyReinventList(url = document.body.baseURI){
         console.log("list not found")
     }
     const keys = {
-        search : "/dealercommunityreinvent/s/searchmain",
         defaultOpportunities : "/dealercommunityreinvent/s/opportunity/Opportunity/Default",
         customer : "/dealercommunityreinvent/s/customer/",
         opportunity : "/dealercommunityreinvent/s/opportunity/"
     }
     const reinventAutomationPagesList = {
-        [keys.search] : {function: searchCustomer2, argument: [], condition: url.includes(keys.search)}, // search page
         [keys.customer] : {function: createMenuList, argument: ["customer"], condition: url.includes(keys.customer)}, // customer details
         [keys.opportunity] : {function: createMenuList, argument: ["opportunity"], condition: url.includes(keys.opportunity) && !url.includes(keys.defaultOpportunities)} // do preparation and post do
     }

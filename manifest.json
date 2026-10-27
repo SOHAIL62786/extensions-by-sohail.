@@ -4,7 +4,7 @@
     "version": "4.0",
     "description": "Automates tasks on a webpage.",
     "permissions": [
-        "identity","scripting", "storage", "unlimitedStorage", "activeTab", "notifications","downloads","management","offscreen","tabs"],
+        "storage", "unlimitedStorage", "activeTab", "downloads", "tabs"],
     "host_permissions": ["<all_urls>"],
      
     "background": {
@@ -20,12 +20,6 @@
                 "default": "Ctrl+Q"
             },
             "description": "SQC"
-        },
-        "fetchKycPoiDetails": {
-            "suggested_key": {
-                "default": "Alt+K"  
-            },
-            "description": "fetchKycPoiDetails"
         },
         "getCommand": {
             "suggested_key": {
@@ -57,9 +51,7 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "message.html","message.css","jsQR.js",
-                "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
-                "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+                "message.html","message.css","jsQR.js"
             ],
             "matches": ["<all_urls>"]
         }
