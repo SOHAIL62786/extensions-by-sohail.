@@ -430,38 +430,30 @@ function convertBtns(){
         }
     });
 }
-async function convertFinone(table){
-    ths = table.querySelectorAll("tbody tr th.data-grid-table-cell:not(.data-grid-header-cell)")
-    finOneCode = {
-        "547677" : "Salman Khan",
-        "646180" :  "MOHAMMED SOHAIL",
-        "10631407" : "Mohammed Mahraj",
-        "537737" : "MOHAMMED MUDASSIR",
-        "186798" : "Abdul Asif",
-        "697493" : "SAYYED ANWARHUSSEN",
-        "411720" : "MOHAMMED SADIQ",
-        "703651" : "MOHD UDDIN",
-        "688658" : "MANJETI PRASAD",
-        "437630" : "MOHD MOHSIN",
-        "606539" : "MOHAMMED QAZI",
-        "444888" : "Mohammed Hasan",
-        "188331" : "Rachakatla Raj",
-        "10574251" : "Yelchala Vijay",
-        "10699527" : "moosa",
-        "641904" : "Ayan",
-        "646568" : "imran"
-
-    }
-    for (th of ths){
-        finone = th.querySelectorAll("label")[1];
-        if(finone){
-            Name = finOneCode[finone?.innerText];
-            console.log(`${finone} : ${Name}`);
-            finone.innerText = Name ? Name : finone?.innerText
-        }else{
-            console.log("skipping for total")
+// Shows the FOS name instead of the Finone code in the report table.
+// The code -> name pairs come from the table on the popup's Home page ("fosDetails").
+async function getFinOneNames(){
+    const fosDetails = await getLocalData("fosDetails");
+    const namesByFinOne = {};
+    for (const [name, entry] of Object.entries(fosDetails)){
+        if(entry && entry.finOneCode){
+            namesByFinOne[String(entry.finOneCode).trim()] = name;
         }
-        
+    }
+    return namesByFinOne;
+}
+async function convertFinone(table){
+    const ths = table.querySelectorAll("tbody tr th.data-grid-table-cell:not(.data-grid-header-cell)");
+    const namesByFinOne = await getFinOneNames();
+    for (const th of ths){
+        const finone = th.querySelectorAll("label")[1];
+        if(!finone){
+            continue;
+        }
+        const name = namesByFinOne[finone.innerText.trim()];
+        if(name){
+            finone.innerText = name;
+        }
     }
 }
 async function handleDiReport(){
