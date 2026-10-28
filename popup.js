@@ -1,152 +1,112 @@
 "use strict";
 
+// Entries are kept in chrome.storage.local under "fosDetails" as
+//   { "NAME": { finOneCode: "646180", addedAt: 1730000000000 }, ... }
+// (storage does not keep key order, so rows are sorted by addedAt; older entries come first)
+const STORAGE_KEY = "fosDetails";
+
+const rows = document.getElementById("rows");
+const emptyNote = document.getElementById("empty");
+const form = document.getElementById("addForm");
+const finOneInput = document.getElementById("finOneInput");
+const nameInput = document.getElementById("nameInput");
+const message = document.getElementById("message");
+
+async function readEntries() {
+    const result = await chrome.storage.local.get(STORAGE_KEY);
+    return result[STORAGE_KEY] ?? {};
+}
+
+function writeEntries(entries) {
+    return chrome.storage.local.set({ [STORAGE_KEY]: entries });
+}
+
+function showMessage(text) {
+    message.textContent = text;
+}
+
+async function render() {
+    const entries = await readEntries();
+    const names = Object.keys(entries).sort((x, y) => (entries[x].addedAt ?? 0) - (entries[y].addedAt ?? 0) || x.localeCompare(y));
+    rows.replaceChildren();
+    names.forEach((name, index) => {
+        const row = document.createElement("tr");
+        const cells = [index + 1, entries[name].finOneCode, name];
+        for (const value of cells) {
+            const cell = document.createElement("td");
+            cell.textContent = value ?? "";
+            row.append(cell);
+        }
+        const actionCell = document.createElement("td");
+        actionCell.className = "action";
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "delete";
+        remove.textContent = "✕";
+        remove.title = `Remove ${name}`;
+        remove.dataset.name = name;
+        actionCell.append(remove);
+        row.append(actionCell);
+        rows.append(row);
+    });
+    emptyNote.hidden = names.length > 0;
+}
+
+async function addEntry(event) {
+    event.preventDefault();
+    const finOne = finOneInput.value.trim();
+    const name = nameInput.value.trim();
+    if (!/^\d+$/.test(finOne)) {
+        showMessage("Finone must be a number");
+        finOneInput.focus();
+        return;
+    }
+    if (!name) {
+        showMessage("Enter a name");
+        nameInput.focus();
+        return;
+    }
+    const entries = await readEntries();
+    if (name in entries) {
+        showMessage("This name is already in the table");
+        nameInput.focus();
+        return;
+    }
+    entries[name] = { finOneCode: finOne, addedAt: Date.now() };
+    await writeEntries(entries);
+    form.reset();
+    showMessage("");
+    finOneInput.focus();
+    render();
+}
+
+async function removeEntry(event) {
+    const button = event.target.closest("button.delete");
+    if (!button) {
+        return;
+    }
+    const entries = await readEntries();
+    delete entries[button.dataset.name];
+    await writeEntries(entries);
+    showMessage("");
+    render();
+}
+
+// ---------- daily self-update from GitHub ----------
 const today = () => new Date().toISOString().split("T")[0];
-const dayMonthYear = (isoDate) => (isoDate ? isoDate.split("-").reverse().join("-") : "-");
 
-// ---------- storage ----------
-const storage = {
-    async get(key) {
-        const result = await chrome.storage.local.get(key);
-        return result[key] ?? {};
-    },
-    set(key, value) {
-        return chrome.storage.local.set({ [key]: value });
-    },
-};
-
-function messageToBackground(type, text) {
-    chrome.runtime.sendMessage({ to: "background.js", from: "popup", type, text });
-}
-
-// ---------- home ----------
-async function loadExtensionDetails() {
-    const manifest = chrome.runtime.getManifest();
-    const permissions = await storage.get("permissions");
-    document.getElementById("detail-name").innerText = manifest.name;
-    document.getElementById("detail-version").innerText = manifest.version;
-    document.getElementById("detail-updated").innerText = dayMonthYear(permissions.lastExtensionRefreshed);
-    document.getElementById("detail-backup").innerText = dayMonthYear(permissions.lastDataBackup);
-}
-
-async function backup() {
-    const data = await chrome.storage.local.get(null);
-    const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: "application/json" }));
-    chrome.downloads.download({ url, filename: `backup ${today()}.json` });
-    const permissions = await storage.get("permissions");
-    permissions.lastDataBackup = today();
-    await storage.set("permissions", permissions);
-}
-
-async function restoreBackup() {
-    const file = document.getElementById("backupFile").files[0];
-    if (!file) {
-        alert("Please select a file.");
-        return;
-    }
-    try {
-        const data = JSON.parse(await file.text());
-        await chrome.storage.local.set(data);
-        alert("Backup restored successfully!");
-        messageToBackground("downloadRepo");
-    } catch (error) {
-        console.error("Restore failed:", error);
-        alert("Invalid backup file. Please upload a valid JSON file.");
-    }
-}
-
-// ---------- permissions ----------
-const priorityBox = document.getElementById("priorityBox");
-const priorityRadios = document.getElementById("priorityRadios");
-
-for (let value = 1; value <= 10; value++) {
-    const label = document.createElement("label");
-    label.append(String(value));
-    const radio = document.createElement("input");
-    radio.type = "radio";
-    radio.name = "messagePriority";
-    radio.value = value;
-    label.append(radio);
-    priorityRadios.append(label);
-}
-
-function showPriority(messengerOn, priority) {
-    priorityBox.hidden = !messengerOn;
-    const radio = priorityRadios.querySelector(`input[value="${priority}"]`);
-    if (radio) {
-        radio.checked = true;
-    }
-}
-
-async function loadPermissions() {
-    const permissions = await storage.get("permissions");
-    document.querySelectorAll(".toggle-checkbox").forEach((toggle) => {
-        if (toggle.id in permissions) {
-            toggle.checked = Boolean(permissions[toggle.id]);
-        }
-    });
-    showPriority(document.getElementById("messenger").checked, permissions.messagePriority);
-}
-
-async function savePermission(event) {
-    const input = event.target;
-    const permissions = await storage.get("permissions");
-    if (input.classList.contains("toggle-checkbox")) {
-        permissions[input.id] = input.checked;
-        if (input.id === "messenger") {
-            showPriority(input.checked, permissions.messagePriority);
-        }
-    } else if (input.name === "messagePriority") {
-        permissions.messagePriority = Number(input.value);
-    } else {
-        return;
-    }
-    await storage.set("permissions", permissions);
-}
-
-// ---------- pages ----------
-const PAGES = {
-    home: loadExtensionDetails,
-    permissions: loadPermissions,
-};
-const tabs = document.getElementById("tabs");
-
-function showPage(id) {
-    tabs.querySelectorAll(".tab").forEach((tab) => {
-        const active = tab.dataset.page === id;
-        tab.classList.toggle("active", active);
-        tab.setAttribute("aria-selected", active);
-    });
-    document.querySelectorAll(".page").forEach((page) => {
-        page.hidden = page.id !== `page-${id}`;
-    });
-    PAGES[id]();
-}
-
-tabs.addEventListener("click", (event) => {
-    const tab = event.target.closest(".tab");
-    if (tab) {
-        showPage(tab.dataset.page);
-    }
-});
-
-// ---------- daily tasks (self-update from GitHub, auto backup) ----------
-async function runDailyTasks() {
-    const permissions = await storage.get("permissions");
+async function runDailyUpdate() {
+    const result = await chrome.storage.local.get("permissions");
+    const permissions = result.permissions ?? {};
     if (permissions.lastExtensionRefreshed !== today()) {
         permissions.lastExtensionRefreshed = today();
-        await storage.set("permissions", permissions);
+        await chrome.storage.local.set({ permissions });
         alert("Extension will close now, you can open it again.");
-        messageToBackground("downloadRepo");
-    }
-    if (permissions.lastDataBackup !== today() && permissions.autoBackup === true) {
-        await backup();
+        chrome.runtime.sendMessage({ to: "background.js", from: "popup", type: "downloadRepo" });
     }
 }
 
-document.getElementById("permissionsForm").addEventListener("change", savePermission);
-document.getElementById("backup").addEventListener("click", backup);
-document.getElementById("restore").addEventListener("click", restoreBackup);
-document.getElementById("reset").addEventListener("click", () => messageToBackground("downloadRepo"));
-
-showPage("home");
-runDailyTasks();
+form.addEventListener("submit", addEntry);
+rows.addEventListener("click", removeEntry);
+render();
+runDailyUpdate();

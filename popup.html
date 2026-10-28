@@ -4,71 +4,33 @@
   <meta charset="UTF-8">
   <title>Automation Tool</title>
   <link rel="stylesheet" href="popup.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
   <div class="main">
-    <header id="tabs" role="tablist">
-      <button class="tab active" role="tab" data-page="home" aria-selected="true">Home</button>
-      <button class="tab" role="tab" data-page="permissions" aria-selected="false">Permissions</button>
-    </header>
+    <header><h1>Home</h1></header>
 
     <main>
-      <section class="page" id="page-home" role="tabpanel">
-        <div class="card details">
-          <h3>Extension Details</h3>
-          <dl>
-            <dt>Extension Name</dt><dd id="detail-name"></dd>
-            <dt>Extension Version</dt><dd id="detail-version"></dd>
-            <dt>Last Updated</dt><dd id="detail-updated"></dd>
-            <dt>Last Backup</dt><dd id="detail-backup"></dd>
-          </dl>
-        </div>
-        <div class="actions">
-          <div class="action">
-            <button id="reset" class="danger">Reset <i class="fa-solid fa-repeat"></i></button>
-          </div>
-          <div class="action">
-            <input type="file" id="backupFile" accept=".json">
-            <button id="restore" class="restore">Restore <i class="fa-solid fa-repeat"></i></button>
-          </div>
-          <div class="action">
-            <button id="backup" class="backup">Backup <i class="fa-solid fa-cloud"></i></button>
-          </div>
-        </div>
-      </section>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th class="sno">S.No</th>
+              <th class="finone">Finone</th>
+              <th>Name</th>
+              <th class="action"></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <p id="empty" hidden>No entries yet</p>
+      </div>
 
-      <section class="page" id="page-permissions" role="tabpanel" hidden>
-        <form class="card" id="permissionsForm">
-          <div class="permission">
-            <label class="name" for="messenger">Messenger</label>
-            <div class="switch-container">
-              <input class="toggle-checkbox" id="messenger" type="checkbox">
-              <label class="switch" for="messenger"><div class="toggle"><div class="led"></div></div></label>
-            </div>
-            <div class="priority" id="priorityBox" hidden>
-              <span class="priority-label">Priority</span>
-              <div class="radioBox" id="priorityRadios"></div>
-            </div>
-          </div>
-
-          <div class="permission">
-            <label class="name" for="qrLinks">Qr Link</label>
-            <div class="switch-container">
-              <input class="toggle-checkbox" id="qrLinks" type="checkbox" checked>
-              <label class="switch" for="qrLinks"><div class="toggle"><div class="led"></div></div></label>
-            </div>
-          </div>
-
-          <div class="permission">
-            <label class="name" for="autoBackup">Auto Backup</label>
-            <div class="switch-container">
-              <input class="toggle-checkbox" id="autoBackup" type="checkbox">
-              <label class="switch" for="autoBackup"><div class="toggle"><div class="led"></div></div></label>
-            </div>
-          </div>
-        </form>
-      </section>
+      <form id="addForm" autocomplete="off">
+        <input id="finOneInput" type="text" inputmode="numeric" placeholder="Finone" aria-label="Finone">
+        <input id="nameInput" type="text" placeholder="Name" aria-label="Name">
+        <button type="submit">Add</button>
+        <span id="message" role="alert"></span>
+      </form>
     </main>
   </div>
 
