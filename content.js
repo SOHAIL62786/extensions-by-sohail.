@@ -732,36 +732,24 @@ function handleListAutomation(event){
         element.children[0].click();
     }).catch(error => console.error(error));
 }
-function addMenuListRight(list){
-    const listBoundaryright = document.createElement("div");
-    listBoundaryright.id = "contentJS-listBoundary-right"
-    listBoundaryright.classList.add("contentJS-listBoundary")
-    document.querySelector("div.cCenterPanel").append(listBoundaryright);
-    list.forEach(name => {
-        const span = document.createElement("button");
-        span.classList.add("contentJS-listItem");
-        span.innerText = name
-        listBoundaryright.append(span);
-        span.addEventListener("click",handleListAutomation)
-    })
-}
-function addMenuListleft(list){
-    console.log("adding menu list ==----->")
-    let listBoundaryleft = document.querySelector("div#contentJS-listBoundary-left")
-    if(!listBoundaryleft){
-        listBoundaryleft = document.createElement("div");
-        listBoundaryleft.id = "contentJS-listBoundary-left"
-        listBoundaryleft.classList.add("contentJS-listBoundary")
-        document.querySelector("div.cCenterPanel").append(listBoundaryleft);
+function addMenuList(side, list){
+    if(list.length === 0){
+        return;
     }
-    for(name of list){
-        const span = document.createElement("button");
-        span.classList.add("contentJS-listItem");
-        span.innerText = name
-        listBoundaryleft.append(span);
-        span.addEventListener("click",handleListAutomation)
+    let boundary = document.querySelector(`div#contentJS-listBoundary-${side}`);
+    if(!boundary){
+        boundary = document.createElement("div");
+        boundary.id = `contentJS-listBoundary-${side}`;
+        boundary.classList.add("contentJS-listBoundary");
+        document.querySelector("div.cCenterPanel").append(boundary);
     }
-    
+    for(const name of list){
+        const button = document.createElement("button");
+        button.classList.add("contentJS-listItem");
+        button.innerText = name;
+        boundary.append(button);
+        button.addEventListener("click",handleListAutomation);
+    }
 }
 function updateMenuList(){
     console.log("updating menu list => ---------")
@@ -785,22 +773,32 @@ async function createMenuList(page){
     const btn = await waitForElementSingle("li.breadcrumb-item button",5000);
     
     btn.addEventListener("click",updateMenuList)
-    const newStage = ["Home","Customer Search","App Status","Zip Code Verification","Product Selection","Income Declaration","KYC","POI","POA","Surrogate Details","Customer Detail Page","Additional Details","CKYC","Asset Cart"]
-    const doPrep = ["Cross Sell","EMI Card","Loan Summary","Postpone EMI","Upi Mandate","PAN Details","Rewards","Offers Details","GST Billing","Other Details","Document Library","Product Validation"];
-    const postDo = ["Do Details","Other Details","Agreement","Invoice","Document Library","Document Validate"]
+    // the menu names come from the Menu List table in the popup
+    const saved = (await chrome.storage.local.get("menuList")).menuList;
+    const menu = Array.isArray(saved) ? saved : DEFAULT_MENU_LIST;
+    const names = (group) => menu.filter(item => item.group === group).map(item => item.name);
     switch(page){
-        case "opportunity": 
-            invoiceAutomation(btn);
-            addMenuListleft(doPrep);
-            addMenuListRight(postDo);
+        case "opportunity":
+            if(!btn.dataset.contentjsInvoice){
+                btn.dataset.contentjsInvoice = "1";
+                invoiceAutomation(btn);
+            }
+            addMenuList("left", names("doPrep"));
+            addMenuList("right", names("postDo"));
             break;
         case "customer":
-            addMenuListleft(newStage);
-            
+            addMenuList("left", names("customer"));
             break;
     }
-    
 }
+// the Menu List table was changed in the popup: rebuild the menus on the open page
+chrome.storage.onChanged.addListener((changes, area) => {
+    if(area === "local" && changes.menuList && chrome.runtime.id){
+        document.querySelectorAll("div.contentJS-listBoundary").forEach(el => el.remove());
+        lastUrl = undefined;
+        modifyReinventList();
+    }
+});
 let lastUrl
 async function modifyReinventList(url = document.body.baseURI){
     if (document.querySelector("div#contentJS-listBoundary-left") && lastUrl === url){

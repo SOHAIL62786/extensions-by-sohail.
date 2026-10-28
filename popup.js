@@ -206,6 +206,7 @@ function showPage(name) {
     tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.page === name));
     document.getElementById("page-home").hidden = name !== "home";
     document.getElementById("page-search").hidden = name !== "search";
+    document.getElementById("page-menu").hidden = name !== "menu";
 }
 
 tabs.forEach((tab) => tab.addEventListener("click", () => showPage(tab.dataset.page)));
@@ -267,6 +268,163 @@ async function deleteSearched(event) {
     const saved = result[SEARCHED_KEY] ?? {};
     delete saved[button.dataset.name];
     await chrome.storage.local.set({ [SEARCHED_KEY]: saved });
+}
+
+// ---------- menu list page ----------
+// stored under "menuList" as [{ name, group }]; the order in the array is the order of the buttons on the page
+const MENU_KEY = "menuList";
+const menuRows = document.getElementById("menuRows");
+const menuEmpty = document.getElementById("menuEmpty");
+const menuForm = document.getElementById("menuForm");
+const menuNameInput = document.getElementById("menuNameInput");
+const menuGroupInput = document.getElementById("menuGroupInput");
+const menuMessage = document.getElementById("menuMessage");
+let editingMenu = null; // index in the stored list
+
+function groupSelect(selected) {
+    const select = document.createElement("select");
+    for (const [key, label] of Object.entries(MENU_GROUPS)) {
+        select.add(new Option(label, key, false, key === selected));
+    }
+    return select;
+}
+
+async function readMenu() {
+    const result = await chrome.storage.local.get(MENU_KEY);
+    return Array.isArray(result[MENU_KEY]) ? result[MENU_KEY] : DEFAULT_MENU_LIST.map((item) => ({ ...item }));
+}
+
+function writeMenu(list) {
+    return chrome.storage.local.set({ [MENU_KEY]: list });
+}
+
+async function renderMenu() {
+    const list = await readMenu();
+    const order = Object.keys(MENU_GROUPS);
+    // grouped by page/side, the saved order is kept inside each group
+    const items = list.map((item, index) => ({ ...item, index }))
+        .sort((x, y) => order.indexOf(x.group) - order.indexOf(y.group) || x.index - y.index);
+    menuRows.replaceChildren();
+    items.forEach((item, position) => {
+        const row = document.createElement("tr");
+        const serial = textCell(position + 1);
+        serial.className = "sno";
+        const actions = document.createElement("td");
+        actions.className = "actions";
+        const key = String(item.index);
+        if (item.index === editingMenu) {
+            row.className = "editing";
+            const groupCell = document.createElement("td");
+            groupCell.append(groupSelect(item.group));
+            row.append(serial, inputCell("edit-menu-name", item.name), groupCell);
+            actions.append(iconButton("save", "Save", key), iconButton("cancel", "Cancel", key), iconButton("delete", "Delete", key));
+        } else {
+            row.append(serial, textCell(item.name), textCell(MENU_GROUPS[item.group] ?? item.group));
+            actions.append(iconButton("edit", "Edit", key), iconButton("delete", "Delete", key));
+        }
+        row.append(actions);
+        menuRows.append(row);
+    });
+    menuEmpty.hidden = items.length > 0;
+    const firstInput = menuRows.querySelector("input.edit-menu-name");
+    if (firstInput) {
+        firstInput.focus();
+    }
+}
+
+async function addMenuItem(event) {
+    event.preventDefault();
+    const name = menuNameInput.value.trim();
+    if (!name) {
+        menuMessage.textContent = "Enter a menu name";
+        menuNameInput.focus();
+        return;
+    }
+    const list = await readMenu();
+    const group = menuGroupInput.value;
+    if (list.some((item) => item.group === group && item.name.toLowerCase() === name.toLowerCase())) {
+        menuMessage.textContent = "This menu is already in that list";
+        menuNameInput.focus();
+        return;
+    }
+    list.push({ name, group });
+    await writeMenu(list);
+    menuForm.reset();
+    menuMessage.textContent = "";
+    menuNameInput.focus();
+    renderMenu();
+}
+
+async function saveMenuEdit(index) {
+    const row = menuRows.querySelector("tr.editing");
+    const name = row.querySelector("input.edit-menu-name").value.trim();
+    const group = row.querySelector("select").value;
+    if (!name) {
+        menuMessage.textContent = "Enter a menu name";
+        return;
+    }
+    const list = await readMenu();
+    if (list.some((item, i) => i !== index && item.group === group && item.name.toLowerCase() === name.toLowerCase())) {
+        menuMessage.textContent = "This menu is already in that list";
+        return;
+    }
+    list[index] = { name, group };
+    await writeMenu(list);
+    editingMenu = null;
+    menuMessage.textContent = "";
+    renderMenu();
+}
+
+async function deleteMenuItem(index) {
+    const list = await readMenu();
+    if (!confirm(`Delete ${list[index].name}?`)) {
+        return;
+    }
+    list.splice(index, 1);
+    await writeMenu(list);
+    editingMenu = null;
+    menuMessage.textContent = "";
+    renderMenu();
+}
+
+function handleMenuClick(event) {
+    const button = event.target.closest("button[data-action]");
+    if (!button) {
+        return;
+    }
+    const index = Number(button.dataset.name);
+    switch (button.dataset.action) {
+        case "edit":
+            editingMenu = index;
+            menuMessage.textContent = "";
+            renderMenu();
+            break;
+        case "cancel":
+            editingMenu = null;
+            menuMessage.textContent = "";
+            renderMenu();
+            break;
+        case "save":
+            saveMenuEdit(index);
+            break;
+        case "delete":
+            deleteMenuItem(index);
+            break;
+    }
+}
+
+function handleMenuKey(event) {
+    if (editingMenu === null || !event.target.matches("input")) {
+        return;
+    }
+    if (event.key === "Enter") {
+        event.preventDefault();
+        saveMenuEdit(editingMenu);
+    } else if (event.key === "Escape") {
+        editingMenu = null;
+        menuMessage.textContent = "";
+        renderMenu();
+    }
 }
 
 // ---------- extension & device info ----------
@@ -346,6 +504,13 @@ form.addEventListener("submit", addEntry);
 rows.addEventListener("click", handleRowClick);
 rows.addEventListener("keydown", handleRowKey);
 searchRows.addEventListener("click", deleteSearched);
+menuForm.addEventListener("submit", addMenuItem);
+menuRows.addEventListener("click", handleMenuClick);
+menuRows.addEventListener("keydown", handleMenuKey);
+for (const [key, label] of Object.entries(MENU_GROUPS)) {
+    menuGroupInput.add(new Option(label, key));
+}
+renderMenu();
 chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local" && changes[SEARCHED_KEY]) {
         renderSearched(changes[SEARCHED_KEY].newValue);

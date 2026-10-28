@@ -264,3 +264,43 @@ dd {
     min-width: 0;
     overflow-wrap: anywhere;
 }
+
+/* ---------- menu list page ---------- */
+.group {
+    width: 190px;
+}
+select {
+    height: 26px;
+    padding: 0 6px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+}
+select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+}
+td select {
+    width: 100%;
+    height: 24px;
+}
+#menuForm {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+}
+#menuNameInput {
+    flex: 1;
+}
+#menuGroupInput {
+    width: 190px;
+}
+#menuMessage {
+    min-height: 16px;
+    margin-top: 6px;
+    color: var(--danger);
+    font-size: 11px;
+}

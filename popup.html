@@ -9,6 +9,7 @@
   <nav class="tabs">
     <button type="button" class="tab active" data-page="home">Home</button>
     <button type="button" class="tab" data-page="search">Search Data</button>
+    <button type="button" class="tab" data-page="menu">Menu List</button>
   </nav>
 
   <div id="page-home" class="page">
@@ -70,6 +71,33 @@
   </main>
   </div>
 
+  <div id="page-menu" class="page" hidden>
+  <main class="column wide">
+    <h1>Menu List</h1>
+    <section class="card">
+      <table>
+        <thead>
+          <tr>
+            <th class="sno">S.No</th>
+            <th>Menu name</th>
+            <th class="group">Shown in</th>
+            <th class="actions"></th>
+          </tr>
+        </thead>
+        <tbody id="menuRows"></tbody>
+      </table>
+      <p id="menuEmpty" hidden>No menu items yet</p>
+    </section>
+    <form id="menuForm" autocomplete="off">
+      <input id="menuNameInput" type="text" placeholder="Menu name" aria-label="Menu name">
+      <select id="menuGroupInput" aria-label="Shown in"></select>
+      <button type="submit" class="primary">Add</button>
+    </form>
+    <p id="menuMessage" class="message" role="alert"></p>
+  </main>
+  </div>
+
+  <script src="menuDefaults.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
