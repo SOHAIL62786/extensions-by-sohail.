@@ -30,6 +30,8 @@ header h1 {
 }
 main {
     flex: 1;
+    width: 50%;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -47,27 +49,28 @@ main {
 table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 12px;
 }
 thead th {
     position: sticky;
     top: 0;
-    padding: 8px;
+    padding: 6px;
     background: #335c67;
     color: aliceblue;
     text-align: left;
 }
 td {
-    padding: 6px 8px;
+    padding: 4px 6px;
     border-bottom: 1px solid #d9d4b8;
 }
 .sno {
-    width: 70px;
+    width: 48px;
 }
 .finone {
-    width: 160px;
+    width: 80px;
 }
 .action {
-    width: 44px;
+    width: 32px;
     text-align: center;
 }
 #empty {
@@ -76,13 +79,13 @@ td {
     text-align: center;
 }
 .delete {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     border: none;
     border-radius: 50%;
     background: none;
     color: #999;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     line-height: 1;
     cursor: pointer;
 }
@@ -94,24 +97,28 @@ td {
 /* ---------- add form ---------- */
 #addForm {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    font-size: 12px;
 }
 #addForm input {
-    height: 32px;
-    padding: 0 8px;
+    height: 28px;
+    padding: 0 6px;
+    font-size: 12px;
     border: 1px solid #335c67;
     border-radius: 5px;
 }
 #finOneInput {
-    width: 160px;
+    width: 80px;
 }
 #nameInput {
     flex: 1;
 }
 #addForm button {
-    height: 32px;
-    padding: 0 18px;
+    height: 28px;
+    padding: 0 14px;
+    font-size: 12px;
     border: none;
     border-radius: 5px;
     background: #335c67;
@@ -123,7 +130,8 @@ td {
     opacity: 0.85;
 }
 #message {
-    min-width: 160px;
+    flex-basis: 100%;
+    min-height: 1em;
     color: #c62828;
-    font-size: 0.85rem;
+    font-size: 11px;
 }
