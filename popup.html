@@ -6,8 +6,14 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
+  <nav class="tabs">
+    <button type="button" class="tab active" data-page="home">Home</button>
+    <button type="button" class="tab" data-page="search">Search Data</button>
+  </nav>
+
+  <div id="page-home" class="page">
   <main class="column">
-    <h1>Home</h1>
+    <h1>Team Data</h1>
 
     <section class="card">
       <table>
@@ -31,6 +37,38 @@
     </form>
     <p id="message" role="alert"></p>
   </main>
+
+  <aside class="column info">
+    <h1>Extension &amp; Device</h1>
+    <section class="card">
+      <h2>Extension</h2>
+      <dl id="extensionInfo"></dl>
+      <h2>Device</h2>
+      <dl id="deviceInfo"></dl>
+    </section>
+  </aside>
+  </div>
+
+  <div id="page-search" class="page" hidden>
+  <main class="column wide">
+    <h1>Search Data</h1>
+    <section class="card">
+      <table>
+        <thead>
+          <tr>
+            <th class="sno">S.No</th>
+            <th>Mobile number</th>
+            <th class="count">Searches</th>
+            <th>Last searched</th>
+            <th class="actions"></th>
+          </tr>
+        </thead>
+        <tbody id="searchRows"></tbody>
+      </table>
+      <p id="searchEmpty" hidden>No numbers searched yet</p>
+    </section>
+  </main>
+  </div>
 
   <script src="popup.js"></script>
 </body>

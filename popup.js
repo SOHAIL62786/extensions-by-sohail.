@@ -199,6 +199,135 @@ function handleRowKey(event) {
     }
 }
 
+// ---------- pages ----------
+const tabs = document.querySelectorAll(".tab");
+
+function showPage(name) {
+    tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.page === name));
+    document.getElementById("page-home").hidden = name !== "home";
+    document.getElementById("page-search").hidden = name !== "search";
+}
+
+tabs.forEach((tab) => tab.addEventListener("click", () => showPage(tab.dataset.page)));
+
+// ---------- search data page ----------
+const SEARCHED_KEY = "searchedNumbers";
+const searchRows = document.getElementById("searchRows");
+const searchEmpty = document.getElementById("searchEmpty");
+
+function timeAgo(iso) {
+    const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (Number.isNaN(seconds)) {
+        return "";
+    }
+    if (seconds < 60) {
+        return "just now";
+    }
+    const plural = (value, unit) => `${value} ${unit}${value === 1 ? "" : "s"} ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+        return plural(minutes, "min");
+    }
+    const hours = Math.floor(minutes / 60);
+    return hours < 24 ? plural(hours, "hour") : plural(Math.floor(hours / 24), "day");
+}
+
+function renderSearched(saved) {
+    const entries = Object.entries(saved ?? {})
+        .sort((x, y) => String(y[1].lastSearchedAt).localeCompare(String(x[1].lastSearchedAt)));
+    searchRows.replaceChildren();
+    entries.forEach(([number, entry], index) => {
+        const row = document.createElement("tr");
+        const serial = textCell(index + 1);
+        serial.className = "sno";
+        const count = textCell(entry.count);
+        count.className = "count";
+        const time = textCell(timeAgo(entry.lastSearchedAt));
+        time.title = new Date(entry.lastSearchedAt).toLocaleString();
+        const actions = document.createElement("td");
+        actions.className = "actions";
+        actions.append(iconButton("delete", "Delete", number));
+        row.append(serial, textCell(number), count, time, actions);
+        searchRows.append(row);
+    });
+    searchEmpty.hidden = entries.length > 0;
+}
+
+async function loadSearched() {
+    const result = await chrome.storage.local.get(SEARCHED_KEY);
+    renderSearched(result[SEARCHED_KEY]);
+}
+
+async function deleteSearched(event) {
+    const button = event.target.closest("button[data-action='delete']");
+    if (!button) {
+        return;
+    }
+    const result = await chrome.storage.local.get(SEARCHED_KEY);
+    const saved = result[SEARCHED_KEY] ?? {};
+    delete saved[button.dataset.name];
+    await chrome.storage.local.set({ [SEARCHED_KEY]: saved });
+}
+
+// ---------- extension & device info ----------
+const ADMIN = "SOHAIL62786";
+
+function fillInfo(listId, items) {
+    const list = document.getElementById(listId);
+    list.replaceChildren();
+    for (const [label, value] of items) {
+        const row = document.createElement("div");
+        const term = document.createElement("dt");
+        const detail = document.createElement("dd");
+        term.textContent = label;
+        detail.textContent = value;
+        row.append(term, detail);
+        list.append(row);
+    }
+}
+
+function browserName() {
+    const brand = (navigator.userAgentData?.brands ?? []).find((item) => /chrom/i.test(item.brand) && !/not/i.test(item.brand));
+    const version = brand ? brand.version : (navigator.userAgent.match(/Chrome\/([\d.]+)/) || [])[1];
+    return version ? `Chrome ${version}` : navigator.userAgent;
+}
+
+async function loadExtensionInfo() {
+    const manifest = chrome.runtime.getManifest();
+    const result = await chrome.storage.local.get("permissions");
+    const updated = result.permissions?.lastExtensionRefreshed;
+    fillInfo("extensionInfo", [
+        ["Name", manifest.name],
+        ["Version", manifest.version],
+        ["Last updated", updated || "Not yet"],
+        ["Admin", ADMIN],
+    ]);
+}
+
+async function loadDeviceInfo() {
+    const platform = await chrome.runtime.getPlatformInfo().catch(() => ({}));
+    const connection = navigator.connection;
+    const items = [
+        ["IP address", "Loading..."],
+        ["System", [platform.os, platform.arch].filter(Boolean).join(" / ") || navigator.platform],
+        ["Browser", browserName()],
+        ["Screen", `${screen.width} x ${screen.height}`],
+        ["Language", navigator.language],
+        ["Time zone", Intl.DateTimeFormat().resolvedOptions().timeZone],
+        ["CPU cores", navigator.hardwareConcurrency ?? "-"],
+        ["Memory", navigator.deviceMemory ? `${navigator.deviceMemory} GB` : "-"],
+        ["Network", [navigator.onLine ? "Online" : "Offline", connection?.effectiveType].filter(Boolean).join(" / ")],
+    ];
+    fillInfo("deviceInfo", items);
+    try {
+        const response = await fetch("https://api.ipify.org?format=json", { signal: AbortSignal.timeout(5000) });
+        items[0][1] = (await response.json()).ip;
+    } catch (error) {
+        items[0][1] = "Unavailable (offline)";
+    }
+    fillInfo("deviceInfo", items);
+}
+
 // ---------- daily self-update from GitHub ----------
 const today = () => new Date().toISOString().split("T")[0];
 
@@ -216,5 +345,15 @@ async function runDailyUpdate() {
 form.addEventListener("submit", addEntry);
 rows.addEventListener("click", handleRowClick);
 rows.addEventListener("keydown", handleRowKey);
+searchRows.addEventListener("click", deleteSearched);
+chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes[SEARCHED_KEY]) {
+        renderSearched(changes[SEARCHED_KEY].newValue);
+    }
+});
+setInterval(loadSearched, 30000);
 render();
+loadSearched();
+loadExtensionInfo();
+loadDeviceInfo();
 runDailyUpdate();
