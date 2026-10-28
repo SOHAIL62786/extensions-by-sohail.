@@ -5,12 +5,21 @@
 // (storage does not keep key order, so rows are sorted by addedAt; older entries come first)
 const STORAGE_KEY = "fosDetails";
 
+const ICONS = {
+    edit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5l2.5 2.5L5 13.5 1.8 14.2 2.5 11z"/></svg>',
+    save: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.5 3.5L13 4.5"/></svg>',
+    cancel: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg>',
+    delete: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5h11M6 4.5V2.8h4v1.7M4 4.5l.7 9h6.6l.7-9M6.7 7v4.5M9.3 7v4.5"/></svg>',
+};
+
 const rows = document.getElementById("rows");
 const emptyNote = document.getElementById("empty");
 const form = document.getElementById("addForm");
 const finOneInput = document.getElementById("finOneInput");
 const nameInput = document.getElementById("nameInput");
 const message = document.getElementById("message");
+
+let editingName = null;
 
 async function readEntries() {
     const result = await chrome.storage.local.get(STORAGE_KEY);
@@ -25,45 +34,80 @@ function showMessage(text) {
     message.textContent = text;
 }
 
+// returns an error text, or null when the values are fine
+function validate(finOne, name) {
+    if (!/^\d+$/.test(finOne)) {
+        return "Finone must be a number";
+    }
+    if (!name) {
+        return "Enter a name";
+    }
+    return null;
+}
+
+function iconButton(kind, label, name) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `icon ${kind}`;
+    button.dataset.action = kind;
+    button.dataset.name = name;
+    button.title = label;
+    button.setAttribute("aria-label", `${label} ${name}`);
+    button.innerHTML = ICONS[kind];
+    return button;
+}
+
+function textCell(value) {
+    const cell = document.createElement("td");
+    cell.textContent = value ?? "";
+    return cell;
+}
+
+function inputCell(className, value) {
+    const cell = document.createElement("td");
+    const input = document.createElement("input");
+    input.className = className;
+    input.value = value ?? "";
+    cell.append(input);
+    return cell;
+}
+
 async function render() {
     const entries = await readEntries();
     const names = Object.keys(entries).sort((x, y) => (entries[x].addedAt ?? 0) - (entries[y].addedAt ?? 0) || x.localeCompare(y));
     rows.replaceChildren();
     names.forEach((name, index) => {
         const row = document.createElement("tr");
-        const cells = [index + 1, entries[name].finOneCode, name];
-        for (const value of cells) {
-            const cell = document.createElement("td");
-            cell.textContent = value ?? "";
-            row.append(cell);
+        const serial = textCell(index + 1);
+        serial.className = "sno";
+        const actions = document.createElement("td");
+        actions.className = "actions";
+        if (name === editingName) {
+            row.className = "editing";
+            row.append(serial, inputCell("edit-finone", entries[name].finOneCode), inputCell("edit-name", name));
+            actions.append(iconButton("save", "Save", name), iconButton("cancel", "Cancel", name), iconButton("delete", "Delete", name));
+        } else {
+            row.append(serial, textCell(entries[name].finOneCode), textCell(name));
+            actions.append(iconButton("edit", "Edit", name));
         }
-        const actionCell = document.createElement("td");
-        actionCell.className = "action";
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.className = "delete";
-        remove.textContent = "✕";
-        remove.title = `Remove ${name}`;
-        remove.dataset.name = name;
-        actionCell.append(remove);
-        row.append(actionCell);
+        row.append(actions);
         rows.append(row);
     });
     emptyNote.hidden = names.length > 0;
+    const firstInput = rows.querySelector("input.edit-finone");
+    if (firstInput) {
+        firstInput.focus();
+    }
 }
 
 async function addEntry(event) {
     event.preventDefault();
     const finOne = finOneInput.value.trim();
     const name = nameInput.value.trim();
-    if (!/^\d+$/.test(finOne)) {
-        showMessage("Finone must be a number");
-        finOneInput.focus();
-        return;
-    }
-    if (!name) {
-        showMessage("Enter a name");
-        nameInput.focus();
+    const problem = validate(finOne, name);
+    if (problem) {
+        showMessage(problem);
+        (name && !/^\d+$/.test(finOne) ? finOneInput : nameInput).focus();
         return;
     }
     const entries = await readEntries();
@@ -80,16 +124,79 @@ async function addEntry(event) {
     render();
 }
 
-async function removeEntry(event) {
-    const button = event.target.closest("button.delete");
-    if (!button) {
+async function saveEdit(oldName) {
+    const row = rows.querySelector("tr.editing");
+    const finOne = row.querySelector("input.edit-finone").value.trim();
+    const name = row.querySelector("input.edit-name").value.trim();
+    const problem = validate(finOne, name);
+    if (problem) {
+        showMessage(problem);
         return;
     }
     const entries = await readEntries();
-    delete entries[button.dataset.name];
+    if (name !== oldName && name in entries) {
+        showMessage("This name is already in the table");
+        return;
+    }
+    const updated = { ...entries[oldName], finOneCode: finOne };
+    delete entries[oldName];
+    entries[name] = updated;
     await writeEntries(entries);
+    editingName = null;
     showMessage("");
     render();
+}
+
+async function deleteEntry(name) {
+    if (!confirm(`Delete ${name}?`)) {
+        return;
+    }
+    const entries = await readEntries();
+    delete entries[name];
+    await writeEntries(entries);
+    editingName = null;
+    showMessage("");
+    render();
+}
+
+function handleRowClick(event) {
+    const button = event.target.closest("button[data-action]");
+    if (!button) {
+        return;
+    }
+    const name = button.dataset.name;
+    switch (button.dataset.action) {
+        case "edit":
+            editingName = name;
+            showMessage("");
+            render();
+            break;
+        case "cancel":
+            editingName = null;
+            showMessage("");
+            render();
+            break;
+        case "save":
+            saveEdit(name);
+            break;
+        case "delete":
+            deleteEntry(name);
+            break;
+    }
+}
+
+function handleRowKey(event) {
+    if (!editingName || !event.target.matches("input")) {
+        return;
+    }
+    if (event.key === "Enter") {
+        event.preventDefault();
+        saveEdit(editingName);
+    } else if (event.key === "Escape") {
+        editingName = null;
+        showMessage("");
+        render();
+    }
 }
 
 // ---------- daily self-update from GitHub ----------
@@ -107,6 +214,7 @@ async function runDailyUpdate() {
 }
 
 form.addEventListener("submit", addEntry);
-rows.addEventListener("click", removeEntry);
+rows.addEventListener("click", handleRowClick);
+rows.addEventListener("keydown", handleRowKey);
 render();
 runDailyUpdate();

@@ -6,33 +6,31 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="main">
-    <header><h1>Home</h1></header>
+  <main class="column">
+    <h1>Home</h1>
 
-    <main>
-      <div class="card">
-        <table>
-          <thead>
-            <tr>
-              <th class="sno">S.No</th>
-              <th class="finone">Finone</th>
-              <th>Name</th>
-              <th class="action"></th>
-            </tr>
-          </thead>
-          <tbody id="rows"></tbody>
-        </table>
-        <p id="empty" hidden>No entries yet</p>
-      </div>
+    <section class="card">
+      <table>
+        <thead>
+          <tr>
+            <th class="sno">S.No</th>
+            <th class="finone">Finone</th>
+            <th>Name</th>
+            <th class="actions"></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p id="empty" hidden>No entries yet</p>
+    </section>
 
-      <form id="addForm" autocomplete="off">
-        <input id="finOneInput" type="text" inputmode="numeric" placeholder="Finone" aria-label="Finone">
-        <input id="nameInput" type="text" placeholder="Name" aria-label="Name">
-        <button type="submit">Add</button>
-        <span id="message" role="alert"></span>
-      </form>
-    </main>
-  </div>
+    <form id="addForm" autocomplete="off">
+      <input id="finOneInput" type="text" inputmode="numeric" placeholder="Finone" aria-label="Finone">
+      <input id="nameInput" type="text" placeholder="Name" aria-label="Name">
+      <button type="submit" class="primary">Add</button>
+    </form>
+    <p id="message" role="alert"></p>
+  </main>
 
   <script src="popup.js"></script>
 </body>
