@@ -43,9 +43,9 @@
         "js": ["jsQR.js","content.js","qrLink.js","searchSave.js"]
       },
       { 
-        "matches": ["https://bflconsumer.my.site.com/dealerRevamp/s/report/*"],
-        "js": ["xlsx.full.min.js"],
-        "all_frames": true
+        "matches": ["https://bflconsumer.my.site.com/dealerRevamp/s/report/*",
+        "https://bflconsumer.my.site.com/dealercommunityreinvent/s/report/*"],
+        "js": ["xlsx.full.min.js"]
       }
     ],
     "web_accessible_resources": [

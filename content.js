@@ -456,12 +456,80 @@ async function convertFinone(table){
         }
     }
 }
+// ---------- DI report: download the table as an Excel file ----------
+const DI_TABLE = "table.data-grid-full-table.data-grid-table";
+const DI_DOWNLOAD_ID = "contentJS-diDownload";
+
+// One array per table row. The first cell of a row (the row heading) can hold several labels:
+// each label gets its own column, and the heading / total rows are padded so numbers stay aligned.
+function readDiReportRows(table){
+    const rows = Array.from(table.querySelectorAll("tr")).map(tr => {
+        const cells = Array.from(tr.children);
+        const [first, ...rest] = cells;
+        const labels = first ? Array.from(first.querySelectorAll("label")) : [];
+        const lead = labels.length > 1
+            ? labels.map(label => label.innerText.replace(/\s+/g, " ").trim())
+            : (first ? [first.innerText.replace(/\s+/g, " ").trim()] : []);
+        const values = rest.map(cell => {
+            const text = cell.innerText.replace(/\s+/g, " ").trim();
+            return cell.tagName === "TD" && /^-?\d[\d,]*(\.\d+)?$/.test(text) ? Number(text.replace(/,/g, "")) : text;
+        });
+        return { lead, values };
+    }).filter(row => row.lead.length || row.values.length);
+    const leadWidth = Math.max(0, ...rows.map(row => row.lead.length));
+    return rows
+        .map(row => [...row.lead, ...Array(leadWidth - row.lead.length).fill(""), ...row.values])
+        .filter(row => row.some(value => value !== ""));
+}
+
+function downloadDiReport(){
+    if(typeof XLSX === "undefined"){
+        alert("Excel library is not loaded. Reload the page and try again.");
+        return;
+    }
+    const iframe = document.querySelector("iframe");
+    const table = iframe && iframe.contentDocument && iframe.contentDocument.querySelector(DI_TABLE);
+    if(!table){
+        alert("The report table is not on the page yet.");
+        return;
+    }
+    const rows = readDiReportRows(table);
+    const sheet = XLSX.utils.aoa_to_sheet(rows);
+    sheet["!cols"] = rows[0].map((_, column) => ({
+        wch: Math.min(50, Math.max(...rows.map(row => String(row[column] ?? "").length)) + 2)
+    }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "DI Report");
+    const now = new Date();
+    const today = [now.getDate(), now.getMonth() + 1, now.getFullYear()].map((part, i) => String(part).padStart(i < 2 ? 2 : 4, "0")).join("-");
+    XLSX.writeFile(workbook, `DI Report ${today}.xlsx`);
+}
+
+function addDiReportDownloadButton(){
+    if(document.getElementById(DI_DOWNLOAD_ID)){
+        return;
+    }
+    const button = document.createElement("button");
+    button.id = DI_DOWNLOAD_ID;
+    button.type = "button";
+    button.textContent = "Download Excel";
+    Object.assign(button.style, {
+        position: "fixed", top: "90px", right: "24px", zIndex: "10000",
+        padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer",
+        background: "#2f4858", color: "#f5f2ec", font: "600 13px sans-serif",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.25)"
+    });
+    button.addEventListener("click", downloadDiReport);
+    document.body.append(button);
+}
+
 async function handleDiReport(){
     console.log("handling Di report");
     let iframe = await waitForElement("iframe",10000);
-    let table = await waitForElementSinglewithiframe("table.data-grid-full-table.data-grid-table",10000);
+    let table = await waitForElementSinglewithiframe(DI_TABLE,10000);
     convertBtns();
     convertFinone(table);
+    addDiReportDownloadButton();
 }
 async function showData(data){
     const request = await addCommandWall("div.tableDiv-contentJS");
