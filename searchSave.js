@@ -3,13 +3,38 @@
 // again, click the cross to delete it.
 // Saved in chrome.storage.local under "searchedNumbers" as
 //   { "9876543210": { firstSearchedAt, lastSearchedAt, count }, ... }
+//
+// Account aggregator password = last 4 digits of the searched number + year of birth ("32102002").
+// The year of birth is read from the customer page that opens after the search. It is kept only for the
+// browser session (chrome.storage.session, gone when the browser closes), never in long-term storage:
+//   "lastSearchedNumber": "9876543210"
+//   "searchPasswords": { "9876543210": { last4, year, password }, ... }
 (function () {
     const STORAGE_KEY = "searchedNumbers";
     const SEARCH_PAGE = "/searchmain";
     const NUMBER_INPUT = 'input.mobile-input[data-id="mobileNumber"]';
     const SEARCH_BUTTON = "button.proceedBtn";
     const PANEL_ID = "contentJS-searchedNumbers";
+    const LAST_KEY = "lastSearchedNumber";
+    const PASSWORD_KEY = "searchPasswords";
+    const DOB_INPUT = 'input[data-id="dob"]';
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    // chrome.storage.session; the background script opens it to content scripts. Never throws.
+    async function sessionGet(key) {
+        try {
+            return (await chrome.storage.session.get(key))[key];
+        } catch (error) {
+            return undefined;
+        }
+    }
+    async function sessionSet(values) {
+        try {
+            await chrome.storage.session.set(values);
+        } catch (error) {
+            // session storage not available yet: the password is simply not saved
+        }
+    }
 
     const onSearchPage = () => location.pathname.toLowerCase().includes(SEARCH_PAGE);
 
@@ -32,7 +57,46 @@
         });
     }
 
+    async function startPassword(number) {
+        // a new search of this number: its password is built again from the customer page that opens next
+        const passwords = (await sessionGet(PASSWORD_KEY)) || {};
+        delete passwords[number];
+        await sessionSet({ [LAST_KEY]: number, [PASSWORD_KEY]: passwords });
+    }
+
+    async function removePassword(number) {
+        const passwords = (await sessionGet(PASSWORD_KEY)) || {};
+        delete passwords[number];
+        await sessionSet({ [PASSWORD_KEY]: passwords });
+    }
+
+    // year of birth shown on the customer page ("2002-07-15" from the date field, or "15/07/2002")
+    function readBirthYear() {
+        const input = document.querySelector(DOB_INPUT);
+        const match = input && String(input.value).match(/(?:^|\D)((?:19|20)\d{2})(?:\D|$)/);
+        return match ? match[1] : null;
+    }
+
+    async function updatePassword() {
+        const year = readBirthYear();
+        if (!year) {
+            return;
+        }
+        const number = await sessionGet(LAST_KEY);
+        if (!number) {
+            return;
+        }
+        const passwords = (await sessionGet(PASSWORD_KEY)) || {};
+        if (passwords[number]) {
+            return;
+        }
+        const last4 = number.slice(-4);
+        passwords[number] = { last4, year, password: last4 + year };
+        await sessionSet({ [PASSWORD_KEY]: passwords });
+    }
+
     function saveNumber(number) {
+        startPassword(number);
         const now = new Date().toISOString();
         updateSaved((saved) => {
             const entry = saved[number];
@@ -43,6 +107,7 @@
     }
 
     function deleteNumber(number) {
+        removePassword(number);
         updateSaved((saved) => {
             delete saved[number];
         });
@@ -118,6 +183,11 @@
             font: inherit; font-weight: 600; letter-spacing: 0.3px; color: #085C97;
         }
         .number:hover { text-decoration: underline; }
+        .password {
+            flex: none; padding: 0 6px; border: 1px dashed #085C97; border-radius: 8px; background: #fff;
+            color: #085C97; font: inherit; font-size: 11px; letter-spacing: 0.5px; cursor: pointer;
+        }
+        .password:hover { background: #e6f1f9; }
         .count { padding: 0 5px; border-radius: 8px; background: #e6f1f9; color: #085C97; font-size: 11px; }
         .time { margin-left: auto; color: #666; font-size: 12px; white-space: nowrap; }
         .delete {
@@ -135,6 +205,7 @@
     let list = null;
     let title = null;
     let current = {};
+    let passwords = {};
 
     function timeAgo(iso) {
         const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -160,6 +231,17 @@
         day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false,
     });
 
+    async function copyPassword(button) {
+        try {
+            await navigator.clipboard.writeText(button.dataset.password);
+            const text = button.textContent;
+            button.textContent = "copied";
+            setTimeout(() => { button.textContent = text; }, 1200);
+        } catch (error) {
+            // clipboard blocked on this page: the password stays visible to type
+        }
+    }
+
     function mountPanel() {
         host = document.createElement("div");
         host.id = PANEL_ID;
@@ -176,7 +258,9 @@
             if (!target) {
                 return;
             }
-            if (target.classList.contains("number")) {
+            if (target.classList.contains("password")) {
+                copyPassword(target);
+            } else if (target.classList.contains("number")) {
                 searchNumber(target.dataset.number);
             } else if (target.classList.contains("delete")) {
                 deleteNumber(target.dataset.number);
@@ -228,6 +312,17 @@
                 item.append(count);
             }
 
+            const saved = passwords[number];
+            if (saved) {
+                const password = document.createElement("button");
+                password.className = "password";
+                password.type = "button";
+                password.dataset.password = saved.password;
+                password.textContent = saved.password;
+                password.title = `Account aggregator password (last 4 digits ${saved.last4} + birth year ${saved.year}). Click to copy`;
+                item.append(password);
+            }
+
             const time = document.createElement("span");
             time.className = "time";
             time.textContent = timeAgo(entry.lastSearchedAt);
@@ -248,8 +343,9 @@
     }
 
     function refresh() {
-        chrome.storage.local.get(STORAGE_KEY, (result) => {
+        chrome.storage.local.get(STORAGE_KEY, async (result) => {
             if (!chrome.runtime.lastError) {
+                passwords = (await sessionGet(PASSWORD_KEY)) || {};
                 render(result[STORAGE_KEY]);
             }
         });
@@ -260,6 +356,7 @@
         if (!chrome.runtime.id) {
             clearInterval(panelTimer);
             clearInterval(agoTimer);
+            clearInterval(dobTimer);
             unmountPanel();
             return;
         }
@@ -276,10 +373,15 @@
     chrome.storage.onChanged.addListener((changes, area) => {
         if (area === "local" && changes[STORAGE_KEY]) {
             render(changes[STORAGE_KEY].newValue);
+        } else if (area === "session" && changes[PASSWORD_KEY]) {
+            passwords = changes[PASSWORD_KEY].newValue || {};
+            render(current);
         }
     });
     const panelTimer = setInterval(syncPanel, 1000);
     // keep "5 mins ago" fresh
     const agoTimer = setInterval(() => render(current), 20000);
+    // the customer page fills in the date of birth a moment after it opens
+    const dobTimer = setInterval(updatePassword, 1500);
     syncPanel();
 })();

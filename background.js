@@ -1,4 +1,7 @@
 console.log("Script started");
+// session storage (cleared when the browser closes) is also opened to content scripts: searchSave.js keeps the
+// account aggregator password there instead of in long-term storage
+chrome.storage.session.setAccessLevel({ accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS" }).catch((error) => console.error(error));
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 };

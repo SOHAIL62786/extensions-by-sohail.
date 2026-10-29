@@ -233,6 +233,8 @@ function timeAgo(iso) {
     return hours < 24 ? plural(hours, "hour") : plural(Math.floor(hours / 24), "day");
 }
 
+let searchPasswords = {};
+
 function renderSearched(saved) {
     const entries = Object.entries(saved ?? {})
         .sort((x, y) => String(y[1].lastSearchedAt).localeCompare(String(x[1].lastSearchedAt)));
@@ -248,13 +250,16 @@ function renderSearched(saved) {
         const actions = document.createElement("td");
         actions.className = "actions";
         actions.append(iconButton("delete", "Delete", number));
-        row.append(serial, textCell(number), count, time, actions);
+        const password = textCell(searchPasswords[number] ? searchPasswords[number].password : "-");
+        password.title = "Last 4 digits of the number + year of birth. Kept only until the browser is closed";
+        row.append(serial, textCell(number), count, password, time, actions);
         searchRows.append(row);
     });
     searchEmpty.hidden = entries.length > 0;
 }
 
 async function loadSearched() {
+    searchPasswords = (await chrome.storage.session.get("searchPasswords")).searchPasswords ?? {};
     const result = await chrome.storage.local.get(SEARCHED_KEY);
     renderSearched(result[SEARCHED_KEY]);
 }
@@ -267,6 +272,9 @@ async function deleteSearched(event) {
     const result = await chrome.storage.local.get(SEARCHED_KEY);
     const saved = result[SEARCHED_KEY] ?? {};
     delete saved[button.dataset.name];
+    const session = (await chrome.storage.session.get("searchPasswords")).searchPasswords ?? {};
+    delete session[button.dataset.name];
+    await chrome.storage.session.set({ searchPasswords: session });
     await chrome.storage.local.set({ [SEARCHED_KEY]: saved });
 }
 
@@ -514,6 +522,9 @@ renderMenu();
 chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local" && changes[SEARCHED_KEY]) {
         renderSearched(changes[SEARCHED_KEY].newValue);
+    } else if (area === "session" && changes.searchPasswords) {
+        searchPasswords = changes.searchPasswords.newValue ?? {};
+        loadSearched();
     }
 });
 setInterval(loadSearched, 30000);
