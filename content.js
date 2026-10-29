@@ -576,15 +576,23 @@ function addDiReportDownloadButton(){
     });
     button.addEventListener("click", downloadDiReport);
     document.body.append(button);
+    // the site is a single-page app: the button must go as soon as another page is opened without a reload
+    const watcher = setInterval(() => {
+        if(chrome.runtime.id && location.href.includes("di-report") && button.isConnected){
+            return;
+        }
+        clearInterval(watcher);
+        button.remove();
+    }, 300);
 }
 
 async function handleDiReport(){
     console.log("handling Di report");
     let iframe = await waitForElement("iframe",10000);
     let table = await waitForElementSinglewithiframe(DI_TABLE,10000);
+    addDiReportDownloadButton();
     convertBtns();
     convertFinone(table);
-    addDiReportDownloadButton();
 }
 async function showData(data){
     const request = await addCommandWall("div.tableDiv-contentJS");
