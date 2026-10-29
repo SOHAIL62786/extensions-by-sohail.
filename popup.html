@@ -82,13 +82,14 @@
             <th class="sno">S.No</th>
             <th>Menu name</th>
             <th class="group">Shown in</th>
-            <th class="actions"></th>
+            <th class="actions menu"></th>
           </tr>
         </thead>
         <tbody id="menuRows"></tbody>
       </table>
       <p id="menuEmpty" hidden>No menu items yet</p>
     </section>
+    <p id="menuHint" hidden><span id="menuHintText"></span> <button type="button" id="menuHintCancel" class="link">Cancel</button></p>
     <form id="menuForm" autocomplete="off">
       <input id="menuNameInput" type="text" placeholder="Menu name" aria-label="Menu name">
       <select id="menuGroupInput" aria-label="Shown in"></select>

@@ -9,6 +9,9 @@ const ICONS = {
     edit: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2.5l2.5 2.5L5 13.5 1.8 14.2 2.5 11z"/></svg>',
     save: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.5 3.5L13 4.5"/></svg>',
     cancel: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg>',
+    up: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10l4.5-4.5 4.5 4.5"/></svg>',
+    down: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg>',
+    insert: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>',
     delete: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5h11M6 4.5V2.8h4v1.7M4 4.5l.7 9h6.6l.7-9M6.7 7v4.5M9.3 7v4.5"/></svg>',
 };
 
@@ -287,7 +290,9 @@ const menuForm = document.getElementById("menuForm");
 const menuNameInput = document.getElementById("menuNameInput");
 const menuGroupInput = document.getElementById("menuGroupInput");
 const menuMessage = document.getElementById("menuMessage");
+const menuHint = document.getElementById("menuHint");
 let editingMenu = null; // index in the stored list
+let insertAfter = null; // index in the stored list: the next added item goes right below it
 
 function groupSelect(selected) {
     const select = document.createElement("select");
@@ -318,7 +323,7 @@ async function renderMenu() {
         const serial = textCell(position + 1);
         serial.className = "sno";
         const actions = document.createElement("td");
-        actions.className = "actions";
+        actions.className = "actions menu";
         const key = String(item.index);
         if (item.index === editingMenu) {
             row.className = "editing";
@@ -328,7 +333,15 @@ async function renderMenu() {
             actions.append(iconButton("save", "Save", key), iconButton("cancel", "Cancel", key), iconButton("delete", "Delete", key));
         } else {
             row.append(serial, textCell(item.name), textCell(MENU_GROUPS[item.group] ?? item.group));
-            actions.append(iconButton("edit", "Edit", key), iconButton("delete", "Delete", key));
+            const sameGroup = items.filter((other) => other.group === item.group);
+            const up = iconButton("up", "Move up", key);
+            const down = iconButton("down", "Move down", key);
+            up.disabled = sameGroup[0] === item;
+            down.disabled = sameGroup[sameGroup.length - 1] === item;
+            actions.append(up, down, iconButton("insert", "Add below", key), iconButton("edit", "Edit", key), iconButton("delete", "Delete", key));
+            if (item.index === insertAfter) {
+                row.className = "inserting";
+            }
         }
         row.append(actions);
         menuRows.append(row);
@@ -337,6 +350,21 @@ async function renderMenu() {
     const firstInput = menuRows.querySelector("input.edit-menu-name");
     if (firstInput) {
         firstInput.focus();
+    }
+}
+
+// "Add below": the next item is placed right under the chosen row and uses its list
+function setInsertAfter(index, list) {
+    insertAfter = index;
+    const active = index !== null && Boolean(list && list[index]);
+    menuForm.classList.toggle("inserting", active);
+    menuGroupInput.disabled = active;
+    menuHint.hidden = !active;
+    if (active) {
+        menuGroupInput.value = list[index].group;
+        document.getElementById("menuHintText").textContent = `New item goes below "${list[index].name}".`;
+    } else {
+        insertAfter = null;
     }
 }
 
@@ -349,15 +377,20 @@ async function addMenuItem(event) {
         return;
     }
     const list = await readMenu();
-    const group = menuGroupInput.value;
+    const group = insertAfter !== null && list[insertAfter] ? list[insertAfter].group : menuGroupInput.value;
     if (list.some((item) => item.group === group && item.name.toLowerCase() === name.toLowerCase())) {
         menuMessage.textContent = "This menu is already in that list";
         menuNameInput.focus();
         return;
     }
-    list.push({ name, group });
+    if (insertAfter !== null && list[insertAfter]) {
+        list.splice(insertAfter + 1, 0, { name, group });
+    } else {
+        list.push({ name, group });
+    }
     await writeMenu(list);
     menuForm.reset();
+    setInsertAfter(null, list);
     menuMessage.textContent = "";
     menuNameInput.focus();
     renderMenu();
@@ -390,9 +423,35 @@ async function deleteMenuItem(index) {
     }
     list.splice(index, 1);
     await writeMenu(list);
+    setInsertAfter(null);
     editingMenu = null;
     menuMessage.textContent = "";
     renderMenu();
+}
+
+// swap an item with the neighbour above / below it inside the same list
+async function moveMenuItem(index, step) {
+    const list = await readMenu();
+    const neighbours = list.map((item, i) => ({ item, i })).filter((entry) => entry.item.group === list[index].group);
+    const position = neighbours.findIndex((entry) => entry.i === index);
+    const other = neighbours[position + step];
+    if (!other) {
+        return;
+    }
+    [list[index], list[other.i]] = [list[other.i], list[index]];
+    await writeMenu(list);
+    setInsertAfter(null);
+    editingMenu = null;
+    renderMenu();
+}
+
+async function startInsert(index) {
+    const list = await readMenu();
+    editingMenu = null;
+    setInsertAfter(index, list);
+    menuMessage.textContent = "";
+    renderMenu();
+    menuNameInput.focus();
 }
 
 function handleMenuClick(event) {
@@ -404,6 +463,7 @@ function handleMenuClick(event) {
     switch (button.dataset.action) {
         case "edit":
             editingMenu = index;
+            setInsertAfter(null);
             menuMessage.textContent = "";
             renderMenu();
             break;
@@ -417,6 +477,15 @@ function handleMenuClick(event) {
             break;
         case "delete":
             deleteMenuItem(index);
+            break;
+        case "up":
+            moveMenuItem(index, -1);
+            break;
+        case "down":
+            moveMenuItem(index, 1);
+            break;
+        case "insert":
+            startInsert(index);
             break;
     }
 }
@@ -513,6 +582,10 @@ rows.addEventListener("click", handleRowClick);
 rows.addEventListener("keydown", handleRowKey);
 searchRows.addEventListener("click", deleteSearched);
 menuForm.addEventListener("submit", addMenuItem);
+document.getElementById("menuHintCancel").addEventListener("click", () => {
+    setInsertAfter(null);
+    renderMenu();
+});
 menuRows.addEventListener("click", handleMenuClick);
 menuRows.addEventListener("keydown", handleMenuKey);
 for (const [key, label] of Object.entries(MENU_GROUPS)) {

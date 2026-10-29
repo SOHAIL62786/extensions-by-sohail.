@@ -883,6 +883,9 @@ function addMenuList(side, list){
         boundary.classList.add("contentJS-listBoundary");
         document.querySelector("div.cCenterPanel").append(boundary);
     }
+    // always start from an empty box: this function can run twice at the same time
+    // (several url events arrive together) and must never add the same list twice
+    boundary.replaceChildren();
     for(const name of list){
         const button = document.createElement("button");
         button.classList.add("contentJS-listItem");
