@@ -460,26 +460,76 @@ async function convertFinone(table){
 const DI_TABLE = "table.data-grid-full-table.data-grid-table";
 const DI_DOWNLOAD_ID = "contentJS-diDownload";
 
-// One array per table row. The first cell of a row (the row heading) can hold several labels:
-// each label gets its own column, and the heading / total rows are padded so numbers stay aligned.
+// Text a person can actually see in an element: the report adds hidden helper text for screen readers
+// ("unchecked, Select row for Drill Down", "Column Actions", "Formula ... FORMULA1") that must not be exported.
+function visibleText(element){
+    const view = element.ownerDocument.defaultView;
+    const parts = [];
+    (function walk(node){
+        if(node.nodeType === 3){
+            parts.push(node.nodeValue);
+        }else if(node.nodeType === 1){
+            if(/^(INPUT|SELECT|SCRIPT|STYLE)$/i.test(node.tagName) || /assistive|sr-only|visually-hidden|offscreen|screen-?reader/i.test(String(node.getAttribute("class")))){
+                return;
+            }
+            const style = view.getComputedStyle(node);
+            const tiny = parseFloat(style.width) <= 1 || parseFloat(style.height) <= 1;
+            if(style.display === "none" || style.visibility === "hidden" || (style.position === "absolute" && tiny) || (style.clip !== "auto" && style.clip !== "")){
+                return;
+            }
+            node.childNodes.forEach(walk);
+            parts.push(" ");
+        }
+    })(element);
+    return parts.join("").replace(/\s+/g, " ").trim();
+}
+
+// column titles: drop whatever the report appends for screen readers, if it was not hidden
+function cleanHeader(text){
+    return text
+        .replace(/\s*\bunchecked\b.*$/i, "")
+        .replace(/\s*Sorted by .*$/i, "")
+        .replace(/\s*Column Actions\s*$/i, "")
+        .replace(/^Formula\s+/i, "")
+        .replace(/\s+FORMULA\d+.*$/, "")
+        .trim();
+}
+
+// "₹1,66,056" -> 166056 shown as ₹, "24%" -> 0.24 shown as %, "1,250" -> 1250; anything else stays text
+function toCellValue(text){
+    let match = text.match(/^₹\s*(-?[\d,]+(?:\.\d+)?)$/);
+    if(match){
+        return { v: Number(match[1].replace(/,/g, "")), t: "n", z: "₹#,##0" };
+    }
+    match = text.match(/^(-?\d+(?:\.\d+)?)%$/);
+    if(match){
+        return { v: Number((Number(match[1]) / 100).toFixed(6)), t: "n", z: "0%" };
+    }
+    if(/^-?\d[\d,]*(\.\d+)?$/.test(text)){
+        return { v: Number(text.replace(/,/g, "")), t: "n", z: "#,##0" };
+    }
+    return { v: text, t: "s" };
+}
+
+// Same rows and columns as the table on screen: the DME ID column shows the name (or the code when
+// there is no name for it), the checkbox helper text is left out.
 function readDiReportRows(table){
-    const rows = Array.from(table.querySelectorAll("tr")).map(tr => {
-        const cells = Array.from(tr.children);
-        const [first, ...rest] = cells;
-        const labels = first ? Array.from(first.querySelectorAll("label")) : [];
-        const lead = labels.length > 1
-            ? labels.map(label => label.innerText.replace(/\s+/g, " ").trim())
-            : (first ? [first.innerText.replace(/\s+/g, " ").trim()] : []);
-        const values = rest.map(cell => {
-            const text = cell.innerText.replace(/\s+/g, " ").trim();
-            return cell.tagName === "TD" && /^-?\d[\d,]*(\.\d+)?$/.test(text) ? Number(text.replace(/,/g, "")) : text;
+    return Array.from(table.querySelectorAll("tr")).map((tr, rowIndex) => {
+        return Array.from(tr.children).map((cell, columnIndex) => {
+            const isHeader = cell.classList.contains("data-grid-header-cell") || rowIndex === 0;
+            if(columnIndex === 0 && !isHeader){
+                const labels = cell.querySelectorAll("label");
+                if(labels.length > 1){
+                    return { v: visibleText(labels[1]), t: "s" };
+                }
+            }
+            const text = visibleText(cell);
+            if(isHeader){
+                return { v: cleanHeader(text), t: "s" };
+            }
+            return columnIndex === 0 ? { v: text, t: "s" } : toCellValue(text);
         });
-        return { lead, values };
-    }).filter(row => row.lead.length || row.values.length);
-    const leadWidth = Math.max(0, ...rows.map(row => row.lead.length));
-    return rows
-        .map(row => [...row.lead, ...Array(leadWidth - row.lead.length).fill(""), ...row.values])
-        .filter(row => row.some(value => value !== ""));
+    }).filter(row => row.some(cell => cell.v !== ""));
 }
 
 function downloadDiReport(){
@@ -494,9 +544,14 @@ function downloadDiReport(){
         return;
     }
     const rows = readDiReportRows(table);
-    const sheet = XLSX.utils.aoa_to_sheet(rows);
+    const sheet = XLSX.utils.aoa_to_sheet(rows.map(row => row.map(cell => cell.v)));
+    rows.forEach((row, r) => row.forEach((cell, c) => {
+        if(cell.z){
+            sheet[XLSX.utils.encode_cell({ r, c })].z = cell.z;
+        }
+    }));
     sheet["!cols"] = rows[0].map((_, column) => ({
-        wch: Math.min(50, Math.max(...rows.map(row => String(row[column] ?? "").length)) + 2)
+        wch: Math.min(40, Math.max(...rows.map(row => String(row[column] ? row[column].v : "").length)) + 3)
     }));
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, sheet, "DI Report");
