@@ -560,7 +560,53 @@ function downloadDiReport(){
     XLSX.writeFile(workbook, `DI Report ${today}.xlsx`);
 }
 
-function addDiReportDownloadButton(){
+// ---- the Download Excel button: a copy of the page's own "Enable Field Editing" button, placed next to it ----
+const DI_COPY_ATTR = "data-contentjs-download";
+const DOWNLOAD_ICON = '<path d="M26 38 12 24h9V6h10v18h9L26 38ZM8 42h36v6H8v-6Z"></path>';
+
+function findFieldEditingButton(doc){
+    const matches = Array.from(doc.querySelectorAll("button, a"))
+        .filter(el => /field editing/i.test(el.textContent) && !el.closest(`[${DI_COPY_ATTR}]`));
+    return matches.find(el => !matches.some(other => other !== el && el.contains(other)));
+}
+
+function makeDownloadButton(host){
+    // the button may sit inside a wrapper of its own: copy the wrapper so the spacing and design are the same
+    let unit = host;
+    while(unit.parentElement && unit.parentElement.children.length === 1 && unit.parentElement.tagName !== "BODY" && !unit.parentElement.tagName.includes("-")){
+        unit = unit.parentElement;
+    }
+    const copy = unit.cloneNode(true);
+    copy.setAttribute(DI_COPY_ATTR, "1");
+    copy.removeAttribute("id");
+    copy.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
+    const button = copy.matches("button, a") ? copy : copy.querySelector("button, a");
+    ["title", "aria-label", "aria-pressed", "disabled", "href", "name", "value"].forEach(name => button.removeAttribute(name));
+    button.setAttribute("title", "Download this table as an Excel file");
+    // label
+    const walker = copy.ownerDocument.createTreeWalker(copy, NodeFilter.SHOW_TEXT);
+    for(let node = walker.nextNode(); node; node = walker.nextNode()){
+        if(/field editing/i.test(node.nodeValue)){
+            node.nodeValue = "Download Excel";
+            break;
+        }
+    }
+    // icon
+    const icon = copy.querySelector("svg");
+    if(icon){
+        icon.setAttribute("viewBox", "0 0 52 52");
+        icon.innerHTML = DOWNLOAD_ICON;
+    }
+    button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        downloadDiReport();
+    });
+    return { unit, copy };
+}
+
+// fallback when the page's own button can not be found: a floating button
+function addFloatingDownloadButton(){
     if(document.getElementById(DI_DOWNLOAD_ID)){
         return;
     }
@@ -570,27 +616,58 @@ function addDiReportDownloadButton(){
     button.textContent = "Download Excel";
     Object.assign(button.style, {
         position: "fixed", top: "90px", right: "24px", zIndex: "10000",
-        padding: "8px 16px", border: "none", borderRadius: "6px", cursor: "pointer",
-        background: "#2f4858", color: "#f5f2ec", font: "600 13px sans-serif",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.25)"
+        padding: "8px 16px", border: "1px solid #0176d3", borderRadius: "4px", cursor: "pointer",
+        background: "#fff", color: "#0176d3", font: "400 13px sans-serif"
     });
     button.addEventListener("click", downloadDiReport);
     document.body.append(button);
-    // the site is a single-page app: the button must go as soon as another page is opened without a reload
-    const watcher = setInterval(() => {
-        if(chrome.runtime.id && location.href.includes("di-report") && button.isConnected){
+}
+
+let diButtonTimer = null;
+function startDiReportButton(){
+    if(diButtonTimer){
+        return;
+    }
+    const startedAt = Date.now();
+    const removeButtons = () => {
+        clearInterval(diButtonTimer);
+        diButtonTimer = null;
+        document.getElementById(DI_DOWNLOAD_ID)?.remove();
+        const iframe = document.querySelector("iframe");
+        try {
+            iframe?.contentDocument?.querySelectorAll(`[${DI_COPY_ATTR}]`).forEach(el => el.remove());
+        } catch (error) {
+            // iframe not readable any more
+        }
+    };
+    const sync = () => {
+        // the site is a single-page app: the button must go as soon as another page is opened without a reload
+        if(!chrome.runtime.id || !location.href.includes("di-report")){
+            removeButtons();
             return;
         }
-        clearInterval(watcher);
-        button.remove();
-    }, 300);
+        const doc = document.querySelector("iframe")?.contentDocument;
+        const host = doc && findFieldEditingButton(doc);
+        if(host){
+            document.getElementById(DI_DOWNLOAD_ID)?.remove();
+            // the report redraws its header now and then: put the button back whenever it is gone
+            if(!doc.querySelector(`[${DI_COPY_ATTR}]`)){
+                const { unit, copy } = makeDownloadButton(host);
+                unit.after(copy);
+            }
+        }else if(Date.now() - startedAt > 8000){
+            addFloatingDownloadButton();
+        }
+    };
+    diButtonTimer = setInterval(sync, 500);
+    sync();
 }
 
 async function handleDiReport(){
     console.log("handling Di report");
     let iframe = await waitForElement("iframe",10000);
     let table = await waitForElementSinglewithiframe(DI_TABLE,10000);
-    addDiReportDownloadButton();
+    startDiReportButton();
     convertBtns();
     convertFinone(table);
 }
