@@ -332,6 +332,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sleep(10000).then(() => {
         chrome.runtime.reload();
       })
+    } else if (message.type === "qrPasswordSubmitted") {
+      if(sender.tab){
+        markQrTabSubmitted(sender.tab.id);
+      }
     } else if (message.type === "download") {
       handleDownloading(message.text);
     }else if(message.type === "captureTab"){
@@ -360,6 +364,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       const plainTab = () => {
         chrome.tabs.create(options, (tab) => {
+          if(tab && !chrome.runtime.lastError){
+            trackQrTab(tab.id);
+          }
           sendResponse({ ok: Boolean(tab) && !chrome.runtime.lastError });
         });
       };
@@ -374,6 +381,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if(chrome.runtime.lastError || !tab){
               plainTab();
             } else {
+              trackQrTab(tab.id);
               sendResponse({ ok: true, split: true });
             }
           });
@@ -395,6 +403,129 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
 });
+// ---------- QR link tab: paste the account aggregator password and submit ----------
+// Only tabs that the extension opened from a QR link are filled (never other pages). The password comes from
+// session storage (searchSave.js builds it: last 4 digits of the searched number + year of birth).
+const QR_TABS_KEY = "qrTabs";
+
+async function trackQrTab(tabId) {
+  try {
+    const stored = await chrome.storage.session.get(["lastSearchedNumber", QR_TABS_KEY]);
+    const qrTabs = stored[QR_TABS_KEY] || {};
+    qrTabs[tabId] = { number: stored.lastSearchedNumber || null, submitted: false };
+    await chrome.storage.session.set({ [QR_TABS_KEY]: qrTabs });
+  } catch (error) {
+    console.error("could not track the QR tab", error);
+  }
+}
+
+async function markQrTabSubmitted(tabId) {
+  const qrTabs = (await chrome.storage.session.get(QR_TABS_KEY))[QR_TABS_KEY] || {};
+  if (qrTabs[tabId]) {
+    qrTabs[tabId].submitted = true;
+    await chrome.storage.session.set({ [QR_TABS_KEY]: qrTabs });
+  }
+}
+
+// runs inside the opened page (every frame): waits for the password box, fills it and presses the submit button
+function autoFillPassword(password) {
+  if (window.__contentJsPasswordWatcher) {
+    return;
+  }
+  window.__contentJsPasswordWatcher = true;
+  const isVisible = (el) => {
+    const rect = el.getBoundingClientRect();
+    const style = getComputedStyle(el);
+    return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+  };
+  const hint = /pass ?word|pass ?code|\bpin\b|\bdob\b/i;
+  const findField = () => {
+    const inputs = Array.from(document.querySelectorAll("input")).filter((el) => isVisible(el) && !el.disabled && !el.readOnly);
+    return inputs.find((el) => el.type === "password") || inputs.find((el) => {
+      const labels = el.labels ? Array.from(el.labels).map((label) => label.textContent).join(" ") : "";
+      return /^(text|tel|number|)$/.test(el.type) && hint.test([el.placeholder, el.name, el.id, el.getAttribute("aria-label"), labels].join(" "));
+    });
+  };
+  const findSubmit = (input) => {
+    const words = /submit|proceed|continue|log ?in|sign ?in|verify|unlock|open|view|next|confirm|\bok\b|\bgo\b/i;
+    let scope = input.form || input.parentElement;
+    for (let level = 0; scope && level < 5; level++, scope = scope.parentElement) {
+      const buttons = Array.from(scope.querySelectorAll("button, input[type=submit], input[type=button], [role=button]")).filter(isVisible);
+      const best = buttons.find((el) => words.test(el.textContent || el.value || "")) || buttons.find((el) => el.type === "submit") || (buttons.length === 1 ? buttons[0] : null);
+      if (best) {
+        return best;
+      }
+    }
+    return null;
+  };
+  const finish = () => chrome.runtime.sendMessage({ to: "background.js", from: "content", type: "qrPasswordSubmitted" }).catch(() => {});
+  let waited = 0;
+  const watcher = setInterval(() => {
+    waited += 500;
+    if (waited > 180000) {
+      clearInterval(watcher);
+      return;
+    }
+    const input = findField();
+    if (!input) {
+      return;
+    }
+    clearInterval(watcher);
+    input.focus();
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, password);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    let attempts = 0;
+    const submitter = setInterval(() => {
+      attempts++;
+      const button = findSubmit(input);
+      if (button && !button.disabled) {
+        clearInterval(submitter);
+        button.click();
+        finish();
+      } else if (attempts >= 10) {
+        clearInterval(submitter);
+        if (input.form && input.form.requestSubmit) {
+          input.form.requestSubmit();
+        } else {
+          input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true }));
+        }
+        finish();
+      }
+    }, 300);
+  }, 500);
+}
+
+async function fillQrPassword(tabId) {
+  const stored = await chrome.storage.session.get([QR_TABS_KEY, "searchPasswords"]);
+  const tracked = (stored[QR_TABS_KEY] || {})[tabId];
+  if (!tracked || tracked.submitted || !tracked.number) {
+    return;
+  }
+  const entry = (stored.searchPasswords || {})[tracked.number];
+  if (!entry) {
+    return;
+  }
+  try {
+    await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, func: autoFillPassword, args: [entry.password] });
+  } catch (error) {
+    console.error("could not fill the password", error);
+  }
+}
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status === "complete") {
+    fillQrPassword(tabId);
+  }
+});
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  const qrTabs = (await chrome.storage.session.get(QR_TABS_KEY))[QR_TABS_KEY] || {};
+  if (qrTabs[tabId]) {
+    delete qrTabs[tabId];
+    await chrome.storage.session.set({ [QR_TABS_KEY]: qrTabs });
+  }
+});
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if(changeInfo.url){
     urlCheck();
