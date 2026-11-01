@@ -202,11 +202,11 @@
         .panel {
             position: fixed; top: 120px; right: 10px; width: 25vw; min-width: 260px; max-height: 80vh;
             display: flex; flex-direction: column; box-sizing: border-box;
-            background: #ffffff; border: 1px solid #085C97; border-radius: 8px;
+            background: #ffffff; border: 1px solid var(--lwc-brandNavigationBarBackgroundColor, #1E2443); border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             font-family: Rubik, Arial, sans-serif; font-size: 14px; color: #222; z-index: 1000;
         }
-        .title { padding: 8px 12px; background: #085C97; color: #fff; font-weight: 600; border-radius: 7px 7px 0 0; }
+        .title { padding: 8px 12px; background: var(--lwc-brandNavigationBarBackgroundColor, #1E2443); color: #fff; font-weight: 600; border-radius: 7px 7px 0 0; }
         ul { list-style: none; margin: 0; padding: 0; overflow-y: auto; }
         li { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid #e5e5e5; }
         li:last-child { border-bottom: none; }
@@ -278,38 +278,6 @@
         }
     }
 
-    // the title uses the colours of the page's own header, so the panel looks like part of the page
-    function colourOf(element, property) {
-        for (let el = element; el; el = el.parentElement) {
-            const value = getComputedStyle(el)[property];
-            if (property !== "backgroundColor" || (value && value !== "transparent" && !/rgba\(.*,\s*0\)$/.test(value))) {
-                return value;
-            }
-        }
-        return null;
-    }
-
-    function matchHeaderColours() {
-        const header = document.querySelector(".cHeaderTop") || document.querySelector(".cHeader") || document.querySelector(".cHeaderWrapper");
-        if (!header || !title) {
-            return;
-        }
-        const background = colourOf(header, "backgroundColor");
-        if (!background) {
-            return;
-        }
-        const text = colourOf(header, "color");
-        const [red, green, blue] = (background.match(/\d+(\.\d+)?/g) || [255, 255, 255]).slice(0, 3).map(Number);
-        const light = (0.299 * red + 0.587 * green + 0.114 * blue) > 235;
-        title.style.backgroundColor = background;
-        title.style.color = text || (light ? "#222" : "#fff");
-        // a white header would make the border disappear
-        title.parentElement.style.borderColor = light ? "#c9c9c9" : background;
-        if (light) {
-            title.style.borderBottom = "1px solid #e5e5e5";
-        }
-    }
-
     function mountPanel() {
         host = document.createElement("div");
         host.id = PANEL_ID;
@@ -337,7 +305,6 @@
         panel.append(title, list);
         root.append(style, panel);
         document.body.append(host);
-        matchHeaderColours();
     }
 
     function unmountPanel() {
@@ -355,7 +322,6 @@
         const entries = Object.entries(current)
             .sort((a, b) => String(b[1].lastSearchedAt).localeCompare(String(a[1].lastSearchedAt)));
         title.textContent = `Searched numbers (${entries.length})`;
-        matchHeaderColours();
         list.replaceChildren();
         if (entries.length === 0) {
             const empty = document.createElement("li");
