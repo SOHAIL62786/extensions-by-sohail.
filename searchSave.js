@@ -278,6 +278,39 @@
         }
     }
 
+    // the dark bar of the page header (the menu with Home, Search, Opportunity ...): the panel title is put
+    // on the same line with the same height, so both look like one bar
+    function findHeaderBar() {
+        if (!title) {
+            return null;
+        }
+        const colour = getComputedStyle(title).backgroundColor;
+        const candidates = document.querySelectorAll(".cHeaderWrapper *, .cHeader *");
+        for (const element of candidates) {
+            const rect = element.getBoundingClientRect();
+            if (rect.width > window.innerWidth * 0.5 && rect.height >= 30 && rect.height <= 120 && rect.top < 150
+                && getComputedStyle(element).backgroundColor === colour) {
+                return { rect, style: getComputedStyle(element) };
+            }
+        }
+        return null;
+    }
+
+    function alignWithHeader() {
+        const bar = findHeaderBar();
+        if (!bar || !title) {
+            return;
+        }
+        const panel = title.parentElement;
+        panel.style.top = `${bar.rect.top - 1}px`; // minus the 1px panel border
+        title.style.boxSizing = "border-box";
+        title.style.height = `${bar.rect.height}px`;
+        title.style.display = "flex";
+        title.style.alignItems = "center";
+        title.style.fontFamily = bar.style.fontFamily;
+        title.style.fontSize = bar.style.fontSize;
+    }
+
     function mountPanel() {
         host = document.createElement("div");
         host.id = PANEL_ID;
@@ -305,6 +338,7 @@
         panel.append(title, list);
         root.append(style, panel);
         document.body.append(host);
+        alignWithHeader();
     }
 
     function unmountPanel() {
@@ -322,6 +356,7 @@
         const entries = Object.entries(current)
             .sort((a, b) => String(b[1].lastSearchedAt).localeCompare(String(a[1].lastSearchedAt)));
         title.textContent = `Searched numbers (${entries.length})`;
+        alignWithHeader();
         list.replaceChildren();
         if (entries.length === 0) {
             const empty = document.createElement("li");
@@ -425,6 +460,7 @@
     const panelTimer = setInterval(syncPanel, 1000);
     // keep "5 mins ago" fresh
     const agoTimer = setInterval(() => render(current), 20000);
+    window.addEventListener("resize", alignWithHeader);
     // the customer page fills in the date of birth a moment after it opens
     const dobTimer = setInterval(() => {
         updatePassword();
