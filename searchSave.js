@@ -286,14 +286,16 @@
         }
         const colour = getComputedStyle(title).backgroundColor;
         const candidates = document.querySelectorAll(".cHeaderWrapper *, .cHeader *");
+        // several nested elements can carry the colour: the tallest one is the whole bar
+        let best = null;
         for (const element of candidates) {
             const rect = element.getBoundingClientRect();
             if (rect.width > window.innerWidth * 0.5 && rect.height >= 30 && rect.height <= 120 && rect.top < 150
-                && getComputedStyle(element).backgroundColor === colour) {
-                return { rect, style: getComputedStyle(element) };
+                && getComputedStyle(element).backgroundColor === colour && (!best || rect.height > best.rect.height)) {
+                best = { rect, style: getComputedStyle(element) };
             }
         }
-        return null;
+        return best;
     }
 
     function alignWithHeader() {
@@ -443,6 +445,8 @@
             if (!host || !host.isConnected) {
                 mountPanel();
                 refresh();
+            } else {
+                alignWithHeader(); // the page header may be drawn after the panel
             }
         } else {
             unmountPanel();
