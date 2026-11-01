@@ -237,6 +237,7 @@ function timeAgo(iso) {
 }
 
 let searchPasswords = {};
+let searchNames = {};
 
 function renderSearched(saved) {
     const entries = Object.entries(saved ?? {})
@@ -255,14 +256,16 @@ function renderSearched(saved) {
         actions.append(iconButton("delete", "Delete", number));
         const password = textCell(searchPasswords[number] ? searchPasswords[number].password : "-");
         password.title = "Last 4 digits of the number + year of birth. Kept only until the browser is closed";
-        row.append(serial, textCell(number), count, password, time, actions);
+        row.append(serial, textCell(number), textCell(searchNames[number] ?? "-"), count, password, time, actions);
         searchRows.append(row);
     });
     searchEmpty.hidden = entries.length > 0;
 }
 
 async function loadSearched() {
-    searchPasswords = (await chrome.storage.session.get("searchPasswords")).searchPasswords ?? {};
+    const session = await chrome.storage.session.get(["searchPasswords", "searchNames"]);
+    searchPasswords = session.searchPasswords ?? {};
+    searchNames = session.searchNames ?? {};
     const result = await chrome.storage.local.get(SEARCHED_KEY);
     renderSearched(result[SEARCHED_KEY]);
 }
@@ -275,9 +278,12 @@ async function deleteSearched(event) {
     const result = await chrome.storage.local.get(SEARCHED_KEY);
     const saved = result[SEARCHED_KEY] ?? {};
     delete saved[button.dataset.name];
-    const session = (await chrome.storage.session.get("searchPasswords")).searchPasswords ?? {};
-    delete session[button.dataset.name];
-    await chrome.storage.session.set({ searchPasswords: session });
+    const kept = await chrome.storage.session.get(["searchPasswords", "searchNames"]);
+    const passwords = kept.searchPasswords ?? {};
+    const names = kept.searchNames ?? {};
+    delete passwords[button.dataset.name];
+    delete names[button.dataset.name];
+    await chrome.storage.session.set({ searchPasswords: passwords, searchNames: names });
     await chrome.storage.local.set({ [SEARCHED_KEY]: saved });
 }
 
@@ -595,8 +601,7 @@ renderMenu();
 chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local" && changes[SEARCHED_KEY]) {
         renderSearched(changes[SEARCHED_KEY].newValue);
-    } else if (area === "session" && changes.searchPasswords) {
-        searchPasswords = changes.searchPasswords.newValue ?? {};
+    } else if (area === "session" && (changes.searchPasswords || changes.searchNames)) {
         loadSearched();
     }
 });

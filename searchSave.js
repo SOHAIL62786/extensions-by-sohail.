@@ -9,6 +9,8 @@
 // browser session (chrome.storage.session, gone when the browser closes), never in long-term storage:
 //   "lastSearchedNumber": "9876543210"
 //   "searchPasswords": { "9876543210": { last4, year, password }, ... }
+// The customer name (shown at the top of the customer pages) is kept the same way:
+//   "searchNames": { "9876543210": "NTBCUSTOMER", ... }
 (function () {
     const STORAGE_KEY = "searchedNumbers";
     const SEARCH_PAGE = "/searchmain";
@@ -17,6 +19,8 @@
     const PANEL_ID = "contentJS-searchedNumbers";
     const LAST_KEY = "lastSearchedNumber";
     const PASSWORD_KEY = "searchPasswords";
+    const NAME_KEY = "searchNames";
+    const NAME_ELEMENT = "p.customerName";
     const DOB_INPUT = 'input[data-id="dob"]';
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -60,14 +64,42 @@
     async function startPassword(number) {
         // a new search of this number: its password is built again from the customer page that opens next
         const passwords = (await sessionGet(PASSWORD_KEY)) || {};
+        const names = (await sessionGet(NAME_KEY)) || {};
         delete passwords[number];
-        await sessionSet({ [LAST_KEY]: number, [PASSWORD_KEY]: passwords });
+        delete names[number];
+        await sessionSet({ [LAST_KEY]: number, [PASSWORD_KEY]: passwords, [NAME_KEY]: names });
     }
 
     async function removePassword(number) {
         const passwords = (await sessionGet(PASSWORD_KEY)) || {};
+        const names = (await sessionGet(NAME_KEY)) || {};
         delete passwords[number];
-        await sessionSet({ [PASSWORD_KEY]: passwords });
+        delete names[number];
+        await sessionSet({ [PASSWORD_KEY]: passwords, [NAME_KEY]: names });
+    }
+
+    // customer name shown in the header of the customer pages ("NTBCUSTOMER")
+    function readCustomerName() {
+        const element = document.querySelector(NAME_ELEMENT);
+        const name = element ? element.textContent.replace(/\s+/g, " ").trim() : "";
+        return name || null;
+    }
+
+    async function updateName() {
+        const name = readCustomerName();
+        if (!name) {
+            return;
+        }
+        const number = await sessionGet(LAST_KEY);
+        if (!number) {
+            return;
+        }
+        const names = (await sessionGet(NAME_KEY)) || {};
+        if (names[number]) {
+            return;
+        }
+        names[number] = name;
+        await sessionSet({ [NAME_KEY]: names });
     }
 
     // year of birth shown on the customer page ("2002-07-15" from the date field, or "15/07/2002")
@@ -188,6 +220,10 @@
             color: #085C97; font: inherit; font-size: 11px; letter-spacing: 0.5px; cursor: pointer;
         }
         .password:hover { background: #e6f1f9; }
+        .name {
+            flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            color: #333; font-size: 12px;
+        }
         .count { padding: 0 5px; border-radius: 8px; background: #e6f1f9; color: #085C97; font-size: 11px; }
         .time { margin-left: auto; color: #666; font-size: 12px; white-space: nowrap; }
         .delete {
@@ -206,6 +242,7 @@
     let title = null;
     let current = {};
     let passwords = {};
+    let names = {};
 
     function timeAgo(iso) {
         const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -305,6 +342,14 @@
             numberButton.title = "Search this number";
             item.append(numberButton);
 
+            if (names[number]) {
+                const name = document.createElement("span");
+                name.className = "name";
+                name.textContent = names[number];
+                name.title = names[number];
+                item.append(name);
+            }
+
             if (entry.count > 1) {
                 const count = document.createElement("span");
                 count.className = "count";
@@ -346,6 +391,7 @@
         chrome.storage.local.get(STORAGE_KEY, async (result) => {
             if (!chrome.runtime.lastError) {
                 passwords = (await sessionGet(PASSWORD_KEY)) || {};
+                names = (await sessionGet(NAME_KEY)) || {};
                 render(result[STORAGE_KEY]);
             }
         });
@@ -373,8 +419,13 @@
     chrome.storage.onChanged.addListener((changes, area) => {
         if (area === "local" && changes[STORAGE_KEY]) {
             render(changes[STORAGE_KEY].newValue);
-        } else if (area === "session" && changes[PASSWORD_KEY]) {
-            passwords = changes[PASSWORD_KEY].newValue || {};
+        } else if (area === "session" && (changes[PASSWORD_KEY] || changes[NAME_KEY])) {
+            if (changes[PASSWORD_KEY]) {
+                passwords = changes[PASSWORD_KEY].newValue || {};
+            }
+            if (changes[NAME_KEY]) {
+                names = changes[NAME_KEY].newValue || {};
+            }
             render(current);
         }
     });
@@ -382,6 +433,9 @@
     // keep "5 mins ago" fresh
     const agoTimer = setInterval(() => render(current), 20000);
     // the customer page fills in the date of birth a moment after it opens
-    const dobTimer = setInterval(updatePassword, 1500);
+    const dobTimer = setInterval(() => {
+        updatePassword();
+        updateName();
+    }, 1500);
     syncPanel();
 })();
