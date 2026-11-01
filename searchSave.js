@@ -200,7 +200,7 @@
         :host { all: initial; }
         :host-context(html.contentJS-notFullScreen) { display: none !important; }
         .panel {
-            position: fixed; top: 120px; right: 10px; width: 25vw; min-width: 260px; max-height: 80vh;
+            position: fixed; top: 120px; right: 10px; width: 25vw; min-width: 260px; max-height: 85vh;
             display: flex; flex-direction: column; box-sizing: border-box;
             background: #ffffff; border: 1px solid var(--lwc-brandNavigationBarBackgroundColor, #1E2443); border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
@@ -306,7 +306,7 @@
         const panel = title.parentElement;
         panel.style.top = `${bar.rect.top - 1}px`; // minus the 1px panel border
         title.style.boxSizing = "border-box";
-        title.style.height = `${bar.rect.height}px`;
+        title.style.minHeight = `${bar.rect.height}px`;
         title.style.display = "flex";
         title.style.alignItems = "center";
         title.style.fontFamily = bar.style.fontFamily;
