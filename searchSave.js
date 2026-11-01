@@ -9,8 +9,8 @@
 // browser session (chrome.storage.session, gone when the browser closes), never in long-term storage:
 //   "lastSearchedNumber": "9876543210"
 //   "searchPasswords": { "9876543210": { last4, year, password }, ... }
-// The customer name (shown at the top of the customer pages) is kept the same way:
-//   "searchNames": { "9876543210": "NTBCUSTOMER", ... }
+// The customer name (shown at the top of the customer pages) is kept in long-term storage, in the same list:
+//   "searchedNumbers": { "9876543210": { ..., name: "NTBCUSTOMER" }, ... }
 (function () {
     const STORAGE_KEY = "searchedNumbers";
     const SEARCH_PAGE = "/searchmain";
@@ -19,7 +19,7 @@
     const PANEL_ID = "contentJS-searchedNumbers";
     const LAST_KEY = "lastSearchedNumber";
     const PASSWORD_KEY = "searchPasswords";
-    const NAME_KEY = "searchNames";
+    const NAME_SAVED_KEY = "nameSavedForLastSearch";
     const NAME_ELEMENT = "p.customerName";
     const DOB_INPUT = 'input[data-id="dob"]';
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -64,18 +64,15 @@
     async function startPassword(number) {
         // a new search of this number: its password is built again from the customer page that opens next
         const passwords = (await sessionGet(PASSWORD_KEY)) || {};
-        const names = (await sessionGet(NAME_KEY)) || {};
         delete passwords[number];
-        delete names[number];
-        await sessionSet({ [LAST_KEY]: number, [PASSWORD_KEY]: passwords, [NAME_KEY]: names });
+        // the name is read again from the customer page that opens after this search
+        await sessionSet({ [LAST_KEY]: number, [PASSWORD_KEY]: passwords, [NAME_SAVED_KEY]: false });
     }
 
     async function removePassword(number) {
         const passwords = (await sessionGet(PASSWORD_KEY)) || {};
-        const names = (await sessionGet(NAME_KEY)) || {};
         delete passwords[number];
-        delete names[number];
-        await sessionSet({ [PASSWORD_KEY]: passwords, [NAME_KEY]: names });
+        await sessionSet({ [PASSWORD_KEY]: passwords });
     }
 
     // customer name shown in the header of the customer pages ("NTBCUSTOMER")
@@ -94,12 +91,15 @@
         if (!number) {
             return;
         }
-        const names = (await sessionGet(NAME_KEY)) || {};
-        if (names[number]) {
+        if (await sessionGet(NAME_SAVED_KEY)) {
             return;
         }
-        names[number] = name;
-        await sessionSet({ [NAME_KEY]: names });
+        await sessionSet({ [NAME_SAVED_KEY]: true });
+        updateSaved((saved) => {
+            if (saved[number]) {
+                saved[number].name = name;
+            }
+        });
     }
 
     // year of birth shown on the customer page ("2002-07-15" from the date field, or "15/07/2002")
@@ -242,7 +242,6 @@
     let title = null;
     let current = {};
     let passwords = {};
-    let names = {};
 
     function timeAgo(iso) {
         const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -376,11 +375,11 @@
             numberButton.title = "Search this number";
             item.append(numberButton);
 
-            if (names[number]) {
+            if (entry.name) {
                 const name = document.createElement("span");
                 name.className = "name";
-                name.textContent = names[number];
-                name.title = names[number];
+                name.textContent = entry.name;
+                name.title = entry.name;
                 item.append(name);
             }
 
@@ -425,7 +424,6 @@
         chrome.storage.local.get(STORAGE_KEY, async (result) => {
             if (!chrome.runtime.lastError) {
                 passwords = (await sessionGet(PASSWORD_KEY)) || {};
-                names = (await sessionGet(NAME_KEY)) || {};
                 render(result[STORAGE_KEY]);
             }
         });
@@ -453,13 +451,8 @@
     chrome.storage.onChanged.addListener((changes, area) => {
         if (area === "local" && changes[STORAGE_KEY]) {
             render(changes[STORAGE_KEY].newValue);
-        } else if (area === "session" && (changes[PASSWORD_KEY] || changes[NAME_KEY])) {
-            if (changes[PASSWORD_KEY]) {
-                passwords = changes[PASSWORD_KEY].newValue || {};
-            }
-            if (changes[NAME_KEY]) {
-                names = changes[NAME_KEY].newValue || {};
-            }
+        } else if (area === "session" && changes[PASSWORD_KEY]) {
+            passwords = changes[PASSWORD_KEY].newValue || {};
             render(current);
         }
     });
