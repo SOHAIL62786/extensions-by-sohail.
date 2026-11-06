@@ -241,6 +241,9 @@
     let list = null;
     let title = null;
     let current = {};
+    let detailsHost = null;
+    let detailsTitle = null;
+    let detailsBody = null;
     let passwords = {};
 
     function timeAgo(iso) {
@@ -280,11 +283,8 @@
 
     // the dark bar of the page header (the menu with Home, Search, Opportunity ...): the panel title is put
     // on the same line with the same height, so both look like one bar
-    function findHeaderBar() {
-        if (!title) {
-            return null;
-        }
-        const colour = getComputedStyle(title).backgroundColor;
+    function findHeaderBar(titleElement) {
+        const colour = getComputedStyle(titleElement).backgroundColor;
         const candidates = document.querySelectorAll(".cHeaderWrapper *, .cHeader *");
         // several nested elements can carry the colour: the tallest one is the whole bar
         let best = null;
@@ -298,19 +298,26 @@
         return best;
     }
 
-    function alignWithHeader() {
-        const bar = findHeaderBar();
-        if (!bar || !title) {
+    function alignTitleWithHeader(titleElement) {
+        if (!titleElement) {
             return;
         }
-        const panel = title.parentElement;
-        panel.style.top = `${bar.rect.top - 1}px`; // minus the 1px panel border
-        title.style.boxSizing = "border-box";
-        title.style.minHeight = `${bar.rect.height}px`;
-        title.style.display = "flex";
-        title.style.alignItems = "center";
-        title.style.fontFamily = bar.style.fontFamily;
-        title.style.fontSize = bar.style.fontSize;
+        const bar = findHeaderBar(titleElement);
+        if (!bar) {
+            return;
+        }
+        titleElement.parentElement.style.top = `${bar.rect.top - 1}px`; // minus the 1px panel border
+        titleElement.style.boxSizing = "border-box";
+        titleElement.style.minHeight = `${bar.rect.height}px`;
+        titleElement.style.display = "flex";
+        titleElement.style.alignItems = "center";
+        titleElement.style.fontFamily = bar.style.fontFamily;
+        titleElement.style.fontSize = bar.style.fontSize;
+    }
+
+    function alignWithHeader() {
+        alignTitleWithHeader(title);
+        alignTitleWithHeader(detailsTitle);
     }
 
     function mountPanel() {
@@ -470,12 +477,93 @@
         return match ? match[0] : "";
     }
 
+    // ---------- details of the number being typed, on the left side of the page ----------
+    const DETAILS_CSS = `
+        :host { all: initial; }
+        :host-context(html.contentJS-notFullScreen) { display: none !important; }
+        .card {
+            position: fixed; top: 120px; left: 24px; width: 25vw; min-width: 260px; box-sizing: border-box;
+            background: #ffffff; border: 1px solid var(--lwc-brandNavigationBarBackgroundColor, #1E2443); border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            font-family: Rubik, Arial, sans-serif; font-size: 14px; color: #222; z-index: 1000;
+        }
+        .title { padding: 8px 12px; background: var(--lwc-brandNavigationBarBackgroundColor, #1E2443); color: #fff; font-weight: 600; border-radius: 7px 7px 0 0; }
+        dl { margin: 0; padding: 4px 12px 8px; }
+        .row { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e5e5e5; }
+        .row:last-child { border-bottom: none; }
+        dt { flex: none; width: 110px; color: #666; font-size: 12px; padding-top: 1px; }
+        dd { flex: 1; min-width: 0; margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+        dd small { display: block; color: #666; font-weight: 400; font-size: 12px; }
+        .missing { color: #999; font-weight: 400; }
+    `;
+
+    function showDetails(number) {
+        const entry = current[number];
+        if (!entry || !document.body) {
+            hideDetails();
+            return;
+        }
+        if (!detailsHost || !detailsHost.isConnected) {
+            detailsHost = document.createElement("div");
+            detailsHost.id = "contentJS-numberDetails";
+            const root = detailsHost.attachShadow({ mode: "open" });
+            const style = document.createElement("style");
+            style.textContent = DETAILS_CSS;
+            const card = document.createElement("div");
+            card.className = "card";
+            detailsTitle = document.createElement("div");
+            detailsTitle.className = "title";
+            detailsTitle.textContent = "Number details";
+            detailsBody = document.createElement("dl");
+            card.append(detailsTitle, detailsBody);
+            root.append(style, card);
+            document.body.append(detailsHost);
+        }
+        const rows = [
+            ["Name", entry.name || null],
+            ["Mobile number", number],
+            ["First searched", [fullTime(entry.firstSearchedAt), timeAgo(entry.firstSearchedAt)]],
+            ["Last searched", [fullTime(entry.lastSearchedAt), timeAgo(entry.lastSearchedAt)]],
+            ["Times searched", String(entry.count)],
+        ];
+        detailsBody.replaceChildren();
+        for (const [label, value] of rows) {
+            const row = document.createElement("div");
+            row.className = "row";
+            const term = document.createElement("dt");
+            term.textContent = label;
+            const detail = document.createElement("dd");
+            if (value === null) {
+                detail.className = "missing";
+                detail.textContent = "Not saved";
+            } else if (Array.isArray(value)) {
+                detail.textContent = value[0];
+                const ago = document.createElement("small");
+                ago.textContent = value[1];
+                detail.append(ago);
+            } else {
+                detail.textContent = value;
+            }
+            row.append(term, detail);
+            detailsBody.append(row);
+        }
+        alignTitleWithHeader(detailsTitle);
+    }
+
+    function hideDetails() {
+        if (detailsHost) {
+            detailsHost.remove();
+            detailsHost = detailsTitle = detailsBody = null;
+        }
+    }
+
     function hideGhost() {
         suggestion = "";
         if (ghost) {
             ghost.remove();
             ghost = null;
         }
+        hideDetails();
     }
 
     function updateGhost(input) {
@@ -483,9 +571,20 @@
             hideGhost();
             return;
         }
-        suggestion = suggestFor(String(input.value).trim());
+        const typedNumber = String(input.value).trim();
+        suggestion = suggestFor(typedNumber);
+        // details of the suggested number, or of the typed number when it is a saved one
+        const shown = suggestion || (current[typedNumber] ? typedNumber : "");
+        if (shown) {
+            showDetails(shown);
+        } else {
+            hideDetails();
+        }
         if (!suggestion) {
-            hideGhost();
+            if (ghost) {
+                ghost.remove();
+                ghost = null;
+            }
             return;
         }
         const rect = input.getBoundingClientRect();
@@ -529,7 +628,11 @@
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, suggestion);
         input.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
         input.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
-        hideGhost();
+        if (ghost) {
+            ghost.remove();
+            ghost = null;
+        }
+        suggestion = "";
     }
 
     document.addEventListener("input", (event) => {
