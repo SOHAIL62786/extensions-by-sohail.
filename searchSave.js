@@ -10,7 +10,8 @@
 //   "lastSearchedNumber": "9876543210"
 //   "searchPasswords": { "9876543210": { last4, year, password }, ... }
 // The customer name (shown at the top of the customer pages) is kept in long-term storage, in the same list:
-//   "searchedNumbers": { "9876543210": { ..., name: "NTBCUSTOMER" }, ... }
+//   "searchedNumbers": { "9876543210": { ..., name: "NTBCUSTOMER", aid: "A102077124" }, ... }
+// (aid = application id, shown under the name in the header of the customer pages)
 (function () {
     const STORAGE_KEY = "searchedNumbers";
     const SEARCH_PAGE = "/searchmain";
@@ -82,11 +83,20 @@
         return name || null;
     }
 
+    // application id ("A177513758") shown under the customer name
+    function readAid() {
+        const element = document.querySelector(NAME_ELEMENT);
+        const text = element && element.parentElement ? element.parentElement.querySelector("p.blackText") : null;
+        const aid = text ? text.textContent.trim() : "";
+        return /^A\d{5,}$/.test(aid) ? aid : null;
+    }
+
     async function updateName() {
         const name = readCustomerName();
         if (!name) {
             return;
         }
+        const aid = readAid();
         const number = await sessionGet(LAST_KEY);
         if (!number) {
             return;
@@ -98,6 +108,11 @@
         updateSaved((saved) => {
             if (saved[number]) {
                 saved[number].name = name;
+                if (aid) {
+                    saved[number].aid = aid;
+                } else {
+                    delete saved[number].aid;
+                }
             }
         });
     }
@@ -389,7 +404,7 @@
                 const name = document.createElement("span");
                 name.className = "name";
                 name.textContent = entry.name;
-                name.title = entry.name;
+                name.title = entry.aid ? `${entry.name} (${entry.aid})` : entry.name;
                 item.append(name);
             }
 
@@ -521,6 +536,7 @@
         }
         const rows = [
             ["Name", entry.name || null],
+            ["Application ID", entry.aid || null],
             ["Mobile number", number],
             ["First searched", [fullTime(entry.firstSearchedAt), timeAgo(entry.firstSearchedAt)]],
             ["Last searched", [fullTime(entry.lastSearchedAt), timeAgo(entry.lastSearchedAt)]],

@@ -255,7 +255,7 @@ function renderSearched(saved) {
         actions.append(iconButton("delete", "Delete", number));
         const password = textCell(searchPasswords[number] ? searchPasswords[number].password : "-");
         password.title = "Last 4 digits of the number + year of birth. Kept only until the browser is closed";
-        row.append(serial, textCell(number), textCell(entry.name ?? "-"), count, password, time, actions);
+        row.append(serial, textCell(number), textCell(entry.name ?? "-"), textCell(entry.aid ?? "-"), count, password, time, actions);
         searchRows.append(row);
     });
     searchEmpty.hidden = entries.length > 0;
