@@ -258,6 +258,8 @@
     let current = {};
     let detailsHost = null;
     let detailsTitle = null;
+    let detailsCard = null;
+    let detailsProbe = null;
     let detailsBody = null;
     let passwords = {};
 
@@ -298,8 +300,7 @@
 
     // the dark bar of the page header (the menu with Home, Search, Opportunity ...): the panel title is put
     // on the same line with the same height, so both look like one bar
-    function findHeaderBar(titleElement) {
-        const colour = getComputedStyle(titleElement).backgroundColor;
+    function findHeaderBar(colour) {
         const candidates = document.querySelectorAll(".cHeaderWrapper *, .cHeader *");
         // several nested elements can carry the colour: the tallest one is the whole bar
         let best = null;
@@ -317,7 +318,7 @@
         if (!titleElement) {
             return;
         }
-        const bar = findHeaderBar(titleElement);
+        const bar = findHeaderBar(getComputedStyle(titleElement).backgroundColor);
         if (!bar) {
             return;
         }
@@ -330,9 +331,18 @@
         titleElement.style.fontSize = bar.style.fontSize;
     }
 
+    // the details card starts right below the header bar
+    function placeDetailsBelowHeader() {
+        if (!detailsCard || !detailsProbe) {
+            return;
+        }
+        const bar = findHeaderBar(getComputedStyle(detailsProbe).backgroundColor);
+        detailsCard.style.top = `${bar ? Math.round(bar.rect.bottom) + 12 : 120}px`;
+    }
+
     function alignWithHeader() {
         alignTitleWithHeader(title);
-        alignTitleWithHeader(detailsTitle);
+        placeDetailsBelowHeader();
     }
 
     function mountPanel() {
@@ -498,11 +508,11 @@
         :host-context(html.contentJS-notFullScreen) { display: none !important; }
         .card {
             position: fixed; top: 120px; left: 24px; width: 25vw; min-width: 260px; box-sizing: border-box;
-            background: #ffffff; border: 1px solid var(--lwc-brandNavigationBarBackgroundColor, #1E2443); border-radius: 8px;
+            background: #ffffff; border: 1px solid #d5d5d5; border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             font-family: Rubik, Arial, sans-serif; font-size: 14px; color: #222; z-index: 1000;
         }
-        .title { padding: 8px 12px; background: var(--lwc-brandNavigationBarBackgroundColor, #1E2443); color: #fff; font-weight: 600; border-radius: 7px 7px 0 0; }
+        .title { padding: 10px 12px; background: none; color: #222; font-weight: 600; border-bottom: 1px solid #e5e5e5; }
         dl { margin: 0; padding: 4px 12px 8px; }
         .row { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #e5e5e5; }
         .row:last-child { border-bottom: none; }
@@ -530,7 +540,11 @@
             detailsTitle.className = "title";
             detailsTitle.textContent = "Number details";
             detailsBody = document.createElement("dl");
-            card.append(detailsTitle, detailsBody);
+            // never shown: only used to read the header's colour, to find the header bar on the page
+            detailsProbe = document.createElement("i");
+            detailsProbe.style.cssText = "display:none;background:var(--lwc-brandNavigationBarBackgroundColor, #1E2443)";
+            card.append(detailsTitle, detailsBody, detailsProbe);
+            detailsCard = card;
             root.append(style, card);
             document.body.append(detailsHost);
         }
@@ -563,13 +577,13 @@
             row.append(term, detail);
             detailsBody.append(row);
         }
-        alignTitleWithHeader(detailsTitle);
+        placeDetailsBelowHeader();
     }
 
     function hideDetails() {
         if (detailsHost) {
             detailsHost.remove();
-            detailsHost = detailsTitle = detailsBody = null;
+            detailsHost = detailsTitle = detailsBody = detailsCard = detailsProbe = null;
         }
     }
 
