@@ -438,6 +438,7 @@
             clearInterval(panelTimer);
             clearInterval(agoTimer);
             clearInterval(dobTimer);
+            hideGhost();
             unmountPanel();
             return;
         }
@@ -452,6 +453,118 @@
             unmountPanel();
         }
     }
+
+    // ---------- suggestion while typing a number ----------
+    // A faded copy of the rest of a saved number is drawn over the input. Tab or the right arrow accepts it.
+    const GHOST_ID = "contentJS-numberGhost";
+    let ghost = null;
+    let suggestion = "";
+
+    function suggestFor(typed) {
+        if (!/^\d{1,9}$/.test(typed)) {
+            return "";
+        }
+        const match = Object.entries(current)
+            .filter(([number]) => number.startsWith(typed) && number !== typed)
+            .sort((a, b) => String(b[1].lastSearchedAt).localeCompare(String(a[1].lastSearchedAt)))[0];
+        return match ? match[0] : "";
+    }
+
+    function hideGhost() {
+        suggestion = "";
+        if (ghost) {
+            ghost.remove();
+            ghost = null;
+        }
+    }
+
+    function updateGhost(input) {
+        if (!onSearchPage() || !input || !input.isConnected || document.activeElement !== input && !input.matches(":focus-within")) {
+            hideGhost();
+            return;
+        }
+        suggestion = suggestFor(String(input.value).trim());
+        if (!suggestion) {
+            hideGhost();
+            return;
+        }
+        const rect = input.getBoundingClientRect();
+        const style = getComputedStyle(input);
+        if (!ghost) {
+            ghost = document.createElement("div");
+            ghost.id = GHOST_ID;
+            ghost.setAttribute("aria-hidden", "true");
+            document.body.append(ghost);
+        }
+        const typed = String(input.value).trim();
+        const border = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+        // same box, font and text alignment as the input, so the typed part (hidden) sits exactly under the real text
+        Object.assign(ghost.style, {
+            position: "fixed", pointerEvents: "none", zIndex: "2147483000", whiteSpace: "pre", overflow: "hidden",
+            display: "block", boxSizing: "border-box", margin: "0",
+            left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`,
+            lineHeight: `${rect.height - border}px`,
+            paddingLeft: `${parseFloat(style.paddingLeft) + parseFloat(style.borderLeftWidth)}px`,
+            paddingRight: `${parseFloat(style.paddingRight) + parseFloat(style.borderRightWidth)}px`,
+            textAlign: style.textAlign, font: style.font, letterSpacing: style.letterSpacing, color: style.color,
+        });
+        ghost.style.lineHeight = `${rect.height - border}px`;
+        ghost.replaceChildren();
+        const hidden = document.createElement("span");
+        hidden.textContent = typed;
+        Object.assign(hidden.style, { visibility: "hidden", position: "relative", display: "inline-block" });
+        // the rest of the number is drawn right after the typed digits
+        const faded = document.createElement("span");
+        faded.textContent = suggestion.slice(typed.length);
+        Object.assign(faded.style, { visibility: "visible", position: "absolute", left: "100%", top: "0", opacity: "0.35" });
+        hidden.append(faded);
+        ghost.append(hidden);
+    }
+
+    function numberInputOf(event) {
+        return event.composedPath().find((el) => el.matches && el.matches(NUMBER_INPUT));
+    }
+
+    function acceptSuggestion(input) {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, suggestion);
+        input.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+        hideGhost();
+    }
+
+    document.addEventListener("input", (event) => {
+        const input = numberInputOf(event);
+        if (input) {
+            updateGhost(input);
+        }
+    }, true);
+    document.addEventListener("focusin", (event) => {
+        const input = numberInputOf(event);
+        if (input) {
+            updateGhost(input);
+        }
+    }, true);
+    document.addEventListener("focusout", (event) => {
+        if (numberInputOf(event)) {
+            hideGhost();
+        }
+    }, true);
+    document.addEventListener("keydown", (event) => {
+        const input = numberInputOf(event);
+        if (!input || !suggestion) {
+            return;
+        }
+        const atEnd = input.selectionStart === input.value.length && input.selectionEnd === input.value.length;
+        if ((event.key === "Tab" && !event.shiftKey) || (event.key === "ArrowRight" && atEnd)) {
+            event.preventDefault();
+            event.stopPropagation();
+            acceptSuggestion(input);
+        } else if (event.key === "Escape" || event.key === "Enter") {
+            hideGhost();
+        }
+    }, true);
+    window.addEventListener("resize", hideGhost);
+    window.addEventListener("scroll", hideGhost, true);
 
     chrome.storage.onChanged.addListener((changes, area) => {
         if (area === "local" && changes[STORAGE_KEY]) {
