@@ -374,25 +374,37 @@ function waitForElementSinglewithiframe(selector,timeout) {
     });
 };
 // Click on a column title of the report table to sort the rows by that column (first click ascending,
-// next click descending). Safe to call again: a title that already has the click handler is skipped.
+// next click descending). One click listener on the report's document (capture phase) serves every column,
+// so it keeps working when the report redraws its header and even if the page stops the click for itself.
+// Safe to call again: it installs itself only once per report document.
 function convertBtns(){
     const iframe = document.querySelector("iframe");
-    const table = iframe && iframe.contentDocument && iframe.contentDocument.querySelector("table.data-grid-full-table.data-grid-table");
-    const header = table && table.querySelector("tr");
-    if(!header){
+    const doc = iframe && iframe.contentDocument;
+    if(!doc || !doc.documentElement || doc.documentElement.dataset.contentjsSort){
         return;
     }
-    Array.from(header.children).forEach((cell, index) => {
-        const label = cell.children[0];
-        if(index === 0 || !label || cell.dataset.contentjsSort){
+    doc.documentElement.dataset.contentjsSort = "1";
+    const style = doc.createElement("style");
+    style.textContent = `table.data-grid-full-table tr:first-child > *:not(:first-child) { cursor: pointer; }
+        .contentJS-sortArrow { margin-left: 4px; }`;
+    (doc.head || doc.documentElement).append(style);
+    doc.addEventListener("click", (event) => {
+        const target = event.target;
+        const cell = target && target.closest ? target.closest("table.data-grid-full-table tr:first-child > *") : null;
+        if(!cell || cell === cell.parentElement.firstElementChild){
             return;
         }
-        cell.dataset.contentjsSort = "1";
-        label.style.width = "fit-content";
-        label.style.padding = "0px 10px 0px 0px";
-        label.style.cursor = "pointer";
-        cell.addEventListener("click", () => sortDiColumn(cell));
-    });
+        // not the select-all checkbox or the column menu button
+        if(target.closest("input, [aria-haspopup]")){
+            return;
+        }
+        console.log("[contentJS] sorting column", Array.from(cell.parentElement.children).indexOf(cell));
+        try{
+            sortDiColumn(cell);
+        }catch(error){
+            console.error("[contentJS] sorting failed", error);
+        }
+    }, true);
 }
 
 function sortDiColumn(cell){
@@ -403,17 +415,24 @@ function sortDiColumn(cell){
     const total = /Total/.test(rows[rows.length - 1].textContent) ? rows[rows.length - 1] : null;
     const body = rows.slice(1, total ? -1 : undefined);
     const index = Array.from(header.children).indexOf(cell);
-    const label = cell.children[0];
-    const text = label.innerText;
-    let ascending = true;
-    if(text.includes("⬇")){
-        label.innerText = text.split("⬇")[0].trim().concat(" ", "⬆");
-    }else if(text.includes("⬆")){
-        ascending = false;
-        label.innerText = text.split("⬆")[0].trim().concat(" ", "⬇");
-    }else{
-        label.innerText = (text.includes("\n") ? text.split("\n")[1] : text).concat(" ", "⬆");
+    const arrows = Array.from(header.querySelectorAll(".contentJS-sortArrow"));
+    const current = arrows.find(arrow => cell.contains(arrow));
+    const ascending = !(current && current.textContent === "⬆");
+    arrows.forEach(arrow => arrow.remove());
+    const arrow = cell.ownerDocument.createElement("span");
+    arrow.className = "contentJS-sortArrow";
+    arrow.textContent = ascending ? "⬆" : "⬇";
+    // right after the visible title text, so it stays on the same line as the title
+    const walker = cell.ownerDocument.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+    let home = null;
+    for(let node = walker.nextNode(); node && !home; node = walker.nextNode()){
+        const holder = node.parentElement;
+        const box = holder.getBoundingClientRect();
+        if(node.nodeValue.trim() && box.width > 1 && box.height > 1 && !holder.closest("button")){
+            home = holder;
+        }
     }
+    (home || cell).append(arrow);
     const valueOf = (tr) => Number((tr.children[index] ? tr.children[index].innerText : "").replace(/[^0-9.]/g, ""));
     const sorted = body
         .map((tr, position) => ({ tr, position, value: valueOf(tr) }))
@@ -481,7 +500,7 @@ function visibleText(element){
 // column titles: drop whatever the report appends for screen readers, if it was not hidden
 function cleanHeader(text){
     return text
-        .replace(/\s*[⬆⬇]\s*$/, "")
+        .replace(/\s*[⬆⬇]/g, "")
         .replace(/\s*\bunchecked\b.*$/i, "")
         .replace(/\s*Sorted by .*$/i, "")
         .replace(/\s*Column Actions\s*$/i, "")
