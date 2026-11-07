@@ -45,12 +45,7 @@ function messageToBackground(type,text){
 };
 getPermissions().then(data => {
     permissions = data;
-    const date = new Date
-    const newDate = date.toISOString().split("T")[0];
-    
 })
-
-console.log("permissions is ",permissions);
 function getLocalData(left){
     return new Promise(resolve => {
       chrome.storage.local.get(left, (request) => {
@@ -248,8 +243,11 @@ function addCommandWall(selector){
 
 
 async function summarizeReport(){
-    const iframe = document.querySelector("iframe")
-    const table = iframe.contentDocument.querySelector("table.data-grid-full-table.data-grid-table")
+    const found = findReportTable();
+    if(!found){
+        return;
+    }
+    const table = found.table;
     const trs = table.querySelectorAll("tr");
     const data = []
     const request = await addCommandWall("div.tableDiv-contentJS");
@@ -358,28 +356,53 @@ async function getCommand(){
         
     }
 }
-function waitForElementSinglewithiframe(selector,timeout) {
-    return new Promise((resolve, reject) => {
+// The DI report table: either in the page itself or in one of its frames (the page also has other frames,
+// such as the chat widget, so every same-origin frame is checked, not just the first one).
+function findReportTable(selector = DI_TABLE){
+    const search = (doc, depth) => {
+        const table = doc.querySelector(selector);
+        if(table){
+            return { doc, table };
+        }
+        if(depth > 2){
+            return null;
+        }
+        for(const frame of doc.querySelectorAll("iframe")){
+            let inner = null;
+            try{
+                inner = frame.contentDocument;
+            }catch(error){
+                inner = null; // other origin: not readable
+            }
+            const found = inner && search(inner, depth + 1);
+            if(found){
+                return found;
+            }
+        }
+        return null;
+    };
+    return search(document, 0);
+}
+
+function waitForReportTable(timeout){
+    return new Promise((resolve) => {
         const startTime = Date.now();
-        const checkExist = setInterval(() => {
-            const element = document.querySelector("iframe").contentDocument.querySelector(selector);
-            if (element) {
-                clearInterval(checkExist);
-                resolve(element);
-            } else if (Date.now() - startTime > timeout) {
-                clearInterval(checkExist);
-                reject(new Error(`Element not found: ${selector}`));
-            }   
-        }, 100); // Check every 100ms
+        const check = setInterval(() => {
+            const found = findReportTable();
+            if(found || Date.now() - startTime > timeout){
+                clearInterval(check);
+                resolve(found);
+            }
+        }, 200);
     });
-};
+}
 // Click on a column title of the report table to sort the rows by that column (first click ascending,
 // next click descending). One click listener on the report's document (capture phase) serves every column,
 // so it keeps working when the report redraws its header and even if the page stops the click for itself.
 // Safe to call again: it installs itself only once per report document.
 function convertBtns(){
-    const iframe = document.querySelector("iframe");
-    const doc = iframe && iframe.contentDocument;
+    const found = findReportTable();
+    const doc = found && found.doc;
     if(!doc || !doc.documentElement || doc.documentElement.dataset.contentjsSort){
         return;
     }
@@ -551,8 +574,8 @@ function downloadDiReport(){
         alert("Excel library is not loaded. Reload the page and try again.");
         return;
     }
-    const iframe = document.querySelector("iframe");
-    const table = iframe && iframe.contentDocument && iframe.contentDocument.querySelector(DI_TABLE);
+    const found = findReportTable();
+    const table = found && found.table;
     if(!table){
         alert("The report table is not on the page yet.");
         return;
@@ -647,11 +670,10 @@ function startDiReportButton(){
         clearInterval(diButtonTimer);
         diButtonTimer = null;
         document.getElementById(DI_DOWNLOAD_ID)?.remove();
-        const iframe = document.querySelector("iframe");
         try {
-            iframe?.contentDocument?.querySelectorAll(`[${DI_COPY_ATTR}]`).forEach(el => el.remove());
+            findReportTable(`[${DI_COPY_ATTR}]`)?.table.remove();
         } catch (error) {
-            // iframe not readable any more
+            // frame not readable any more
         }
     };
     const sync = () => {
@@ -660,10 +682,11 @@ function startDiReportButton(){
             removeButtons();
             return;
         }
-        const doc = document.querySelector("iframe")?.contentDocument;
+        const found = findReportTable();
+        const doc = found && found.doc;
         // the report redraws its table now and then (refresh, new filter): give the new one sorting and names again
         try{
-            const table = doc && doc.querySelector(DI_TABLE);
+            const table = found && found.table;
             if(table){
                 convertBtns();
                 if(!table.dataset.contentjsNames){
@@ -697,14 +720,26 @@ function startDiReportButton(){
     safeSync();
 }
 
+let diReportRunning = false;
 async function handleDiReport(){
-    console.log("handling Di report");
-    let iframe = await waitForElement("iframe",10000);
-    let table = await waitForElementSinglewithiframe(DI_TABLE,10000);
-    // each step on its own: if one fails the others (sorting, names, button) still work
-    try{ convertBtns(); }catch(error){ console.error("sorting setup failed", error); }
-    try{ await convertFinone(table); }catch(error){ console.error("name conversion failed", error); }
-    try{ startDiReportButton(); }catch(error){ console.error("download button failed", error); }
+    // the page reports the same address several times: one run at a time is enough
+    if(diReportRunning){
+        return;
+    }
+    diReportRunning = true;
+    try{
+        const found = await waitForReportTable(30000);
+        if(!found){
+            console.error("DI report table not found");
+            return;
+        }
+        // each step on its own: if one fails the others (sorting, names, button) still work
+        try{ convertBtns(); }catch(error){ console.error("sorting setup failed", error); }
+        try{ await convertFinone(found.table); }catch(error){ console.error("name conversion failed", error); }
+        try{ startDiReportButton(); }catch(error){ console.error("download button failed", error); }
+    }finally{
+        diReportRunning = false;
+    }
 }
 async function showData(data){
     const request = await addCommandWall("div.tableDiv-contentJS");
@@ -979,34 +1014,26 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 let lastUrl
 async function modifyReinventList(url = document.body.baseURI){
-    if (document.querySelector("div#contentJS-listBoundary-left") && lastUrl === url){
-        console.log("skipping list creation, list already there");
-        return
-    }else{
-        lastUrl = url
-        console.log("list not found")
+    const defaultOpportunities = "/dealercommunityreinvent/s/opportunity/Opportunity/Default";
+    let page = null; // which menu this page gets: "customer" (customer details) or "opportunity" (do preparation and post do)
+    if(url.includes("/dealercommunityreinvent/s/customer/")){
+        page = "customer";
+    }else if(url.includes("/dealercommunityreinvent/s/opportunity/") && !url.includes(defaultOpportunities)){
+        page = "opportunity";
     }
-    const keys = {
-        defaultOpportunities : "/dealercommunityreinvent/s/opportunity/Opportunity/Default",
-        customer : "/dealercommunityreinvent/s/customer/",
-        opportunity : "/dealercommunityreinvent/s/opportunity/"
+    const boundaries = document.querySelectorAll("div.contentJS-listBoundary");
+    if(!page){
+        // any other page: take the menus away if they are still there, nothing else to do
+        boundaries.forEach(el => el.remove());
+        lastUrl = undefined;
+        return;
     }
-    const reinventAutomationPagesList = {
-        [keys.customer] : {function: createMenuList, argument: ["customer"], condition: url.includes(keys.customer)}, // customer details
-        [keys.opportunity] : {function: createMenuList, argument: ["opportunity"], condition: url.includes(keys.opportunity) && !url.includes(keys.defaultOpportunities)} // do preparation and post do
+    if(lastUrl === url && boundaries.length > 0){
+        return;
     }
-    for (let page in reinventAutomationPagesList){
-        console.log("checking page ",page)
-        let Function = reinventAutomationPagesList[page].function
-        let condition = reinventAutomationPagesList[page].condition
-        if (condition && typeof(Function) === 'function'){
-            console.log("calling function",Function);
-            Function(...reinventAutomationPagesList[page].argument);
-        }else{
-            console.log("cleanup needed for ",page);
-            document.querySelectorAll("div.contentJS-listBoundary").forEach(el => el.remove());
-        }
-    }
+    lastUrl = url;
+    boundaries.forEach(el => el.remove());
+    createMenuList(page);
 }
 chrome.runtime.onMessage.addListener(async (request,sender, sendResponse) => {
     console.log("content recieved message : ",request)
@@ -1051,7 +1078,6 @@ chrome.runtime.onMessage.addListener(async (request,sender, sendResponse) => {
         convertBtns();
     }
     else if(request.action === "checkReinventAutomationPagesList"){
-        console.log("modifying the reinvent features",document.body.baseURI);
         modifyReinventList();
     }else if(request.action === "clusterExecution"){
         const response = await checkConditions();
