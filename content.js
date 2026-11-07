@@ -356,17 +356,11 @@ async function getCommand(){
         
     }
 }
-// The DI report table: either in the page itself or in one of its frames (the page also has other frames,
-// such as the chat widget, so every same-origin frame is checked, not just the first one).
-function findReportTable(selector = DI_TABLE){
-    const search = (doc, depth) => {
-        const table = doc.querySelector(selector);
-        if(table){
-            return { doc, table };
-        }
-        if(depth > 2){
-            return null;
-        }
+// Every document that can hold the report: the page and its readable frames (the page also has other frames,
+// such as the chat widget, so not just the first one is checked).
+function reportDocuments(doc = document, depth = 0){
+    const docs = [doc];
+    if(depth < 3){
         for(const frame of doc.querySelectorAll("iframe")){
             let inner = null;
             try{
@@ -374,14 +368,58 @@ function findReportTable(selector = DI_TABLE){
             }catch(error){
                 inner = null; // other origin: not readable
             }
-            const found = inner && search(inner, depth + 1);
-            if(found){
-                return found;
+            if(inner){
+                docs.push(...reportDocuments(inner, depth + 1));
             }
         }
+    }
+    return docs;
+}
+
+// The report table. If the page's own table class is not there (the report was redrawn with other class
+// names), the biggest table inside a frame is used instead.
+function findReportTable(selector = DI_TABLE){
+    const docs = reportDocuments();
+    for(const doc of docs){
+        const table = doc.querySelector(selector);
+        if(table){
+            return { doc, table };
+        }
+    }
+    if(selector !== DI_TABLE){
         return null;
+    }
+    let best = null;
+    for(const doc of docs.slice(1)){
+        for(const table of doc.querySelectorAll("table")){
+            const count = table.querySelectorAll("tr").length;
+            if(count >= 3 && (!best || count > best.count)){
+                best = { doc, table, count };
+            }
+        }
+    }
+    return best ? { doc: best.doc, table: best.table } : null;
+}
+
+// What is on the page, for when the report table can not be found
+function describeReportFrames(){
+    const describe = (doc) => ({
+        tables: Array.from(doc.querySelectorAll("table")).slice(0, 6).map(table => `${table.className || "(no class)"} rows=${table.querySelectorAll("tr").length}`),
+        grids: doc.querySelectorAll("[role=grid], [role=treegrid], lightning-datatable").length,
+        dataGridClasses: doc.querySelectorAll("[class*=data-grid]").length,
+    });
+    return {
+        page: describe(document),
+        frames: Array.from(document.querySelectorAll("iframe")).map(frame => {
+            let inner = null;
+            try{
+                inner = frame.contentDocument;
+            }catch(error){
+                inner = null;
+            }
+            return { title: frame.title, name: frame.name, src: frame.getAttribute("src"), readable: Boolean(inner), ...(inner ? describe(inner) : {}) };
+        }),
     };
-    return search(document, 0);
 }
 
 function waitForReportTable(timeout){
@@ -408,13 +446,15 @@ function convertBtns(){
     }
     doc.documentElement.dataset.contentjsSort = "1";
     const style = doc.createElement("style");
-    style.textContent = `table.data-grid-full-table tr:first-child > *:not(:first-child) { cursor: pointer; }
+    style.textContent = `tr:first-child > th:not(:first-child) { cursor: pointer; }
         .contentJS-sortArrow { margin-left: 4px; }`;
     (doc.head || doc.documentElement).append(style);
     doc.addEventListener("click", (event) => {
         const target = event.target;
-        const cell = target && target.closest ? target.closest("table.data-grid-full-table tr:first-child > *") : null;
-        if(!cell || cell === cell.parentElement.firstElementChild){
+        const cell = target && target.closest ? target.closest("tr > *") : null;
+        const report = cell && findReportTable();
+        // only the title row of the report table, and not its first column
+        if(!report || cell.parentElement !== report.table.querySelector("tr") || cell === cell.parentElement.firstElementChild){
             return;
         }
         // not the select-all checkbox or the column menu button
@@ -728,9 +768,13 @@ async function handleDiReport(){
     }
     diReportRunning = true;
     try{
-        const found = await waitForReportTable(30000);
+        let found = await waitForReportTable(10000);
         if(!found){
-            console.error("DI report table not found");
+            console.warn("[contentJS] DI report table not found yet. Page details:", JSON.stringify(describeReportFrames()));
+            found = await waitForReportTable(20000);
+        }
+        if(!found){
+            console.error("[contentJS] DI report table not found");
             return;
         }
         // each step on its own: if one fails the others (sorting, names, button) still work
