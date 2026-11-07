@@ -373,62 +373,56 @@ function waitForElementSinglewithiframe(selector,timeout) {
         }, 100); // Check every 100ms
     });
 };
+// Click on a column title of the report table to sort the rows by that column (first click ascending,
+// next click descending). Safe to call again: a title that already has the click handler is skipped.
 function convertBtns(){
-    iframe = document.querySelector("iframe")
-    table = iframe.contentDocument.querySelector("table.data-grid-full-table.data-grid-table")
-    trs = table.querySelectorAll("tr");
-    trs[0].childNodes.forEach((element,index) => {
-        if(index != 0){
-            element.children[0].style.width = "fit-content"
-            element.children[0].style.padding = "0px 10px 0px 0px"
-            element.children[0].style.cursor = "pointer"
-            element.addEventListener("click",(event) => {
-                console.log("event triggered",event.target);
-                data = []
-                trs.forEach((tr,ind) => {
-                    if(ind === 0 || ind === (trs.length -1)){
-                    }else{
-                        const target = tr.childNodes[index].innerText
-                        let newTarget = Number(target.replace(/[^0-9.]/g,''))
-                        data.push(newTarget)
-                    }
-                })
-                console.log("data is ",data)
-                let newData
-                const purpose = event.target.innerText
-                console.log("purpose is ",purpose);
-                if(purpose?.includes("⬇")){
-                    newData = data.sort((a,b) => a-b);
-                    event.target.innerText = purpose.split("⬇")[0].concat(" ","⬆")
-                }else if(purpose.includes("⬆")){
-                    newData = data.sort((a,b) => b-a);
-                    event.target.innerText = purpose.split("⬆")[0].concat(" ","⬇")
-                }else{
-                    newData = data.sort((a,b) => a-b);
-                    event.target.innerText = purpose.includes("\n") ? purpose.split("\n")[1].concat(" ","⬆") : purpose.concat(" ","⬆");
-                    
-                }
-                newTrs = table.querySelectorAll("tr");
-                tbody = table.querySelector("tbody");
-                newData.forEach((val) => {
-                    for(tr of newTrs){
-                        const targetText = tr.childNodes[index].innerText
-                        let newTarget = Number(targetText.replace(/[^0-9.]/g,''))
-                        if(val === newTarget){
-                            tr.remove();
-                            tbody.append(tr)
-                        }
-                    }
-                })
-                const newTotal = Array.from(table.querySelectorAll("tr"))
-                    .find(tr => tr.textContent.includes("Total"));
-                tbody.append(newTotal)
-                const newHeader = Array.from(table.querySelectorAll("tr"))
-                    .find(tr => tr.textContent.includes("DME ID"));
-                tbody.prepend(newHeader);
-            })
+    const iframe = document.querySelector("iframe");
+    const table = iframe && iframe.contentDocument && iframe.contentDocument.querySelector("table.data-grid-full-table.data-grid-table");
+    const header = table && table.querySelector("tr");
+    if(!header){
+        return;
+    }
+    Array.from(header.children).forEach((cell, index) => {
+        const label = cell.children[0];
+        if(index === 0 || !label || cell.dataset.contentjsSort){
+            return;
         }
+        cell.dataset.contentjsSort = "1";
+        label.style.width = "fit-content";
+        label.style.padding = "0px 10px 0px 0px";
+        label.style.cursor = "pointer";
+        cell.addEventListener("click", () => sortDiColumn(cell));
     });
+}
+
+function sortDiColumn(cell){
+    const table = cell.closest("table");
+    const rows = Array.from(table.querySelectorAll("tr"));
+    const header = rows[0];
+    // the last row is the "Total" row: it always stays at the bottom
+    const total = /Total/.test(rows[rows.length - 1].textContent) ? rows[rows.length - 1] : null;
+    const body = rows.slice(1, total ? -1 : undefined);
+    const index = Array.from(header.children).indexOf(cell);
+    const label = cell.children[0];
+    const text = label.innerText;
+    let ascending = true;
+    if(text.includes("⬇")){
+        label.innerText = text.split("⬇")[0].trim().concat(" ", "⬆");
+    }else if(text.includes("⬆")){
+        ascending = false;
+        label.innerText = text.split("⬆")[0].trim().concat(" ", "⬇");
+    }else{
+        label.innerText = (text.includes("\n") ? text.split("\n")[1] : text).concat(" ", "⬆");
+    }
+    const valueOf = (tr) => Number((tr.children[index] ? tr.children[index].innerText : "").replace(/[^0-9.]/g, ""));
+    const sorted = body
+        .map((tr, position) => ({ tr, position, value: valueOf(tr) }))
+        .sort((x, y) => (ascending ? x.value - y.value : y.value - x.value) || x.position - y.position);
+    const tbody = header.parentElement;
+    sorted.forEach(item => tbody.append(item.tr));
+    if(total){
+        tbody.append(total);
+    }
 }
 // Shows the FOS name instead of the Finone code in the report table.
 // The code -> name pairs come from the table on the popup's Home page ("fosDetails").
@@ -487,6 +481,7 @@ function visibleText(element){
 // column titles: drop whatever the report appends for screen readers, if it was not hidden
 function cleanHeader(text){
     return text
+        .replace(/\s*[⬆⬇]\s*$/, "")
         .replace(/\s*\bunchecked\b.*$/i, "")
         .replace(/\s*Sorted by .*$/i, "")
         .replace(/\s*Column Actions\s*$/i, "")
@@ -647,6 +642,19 @@ function startDiReportButton(){
             return;
         }
         const doc = document.querySelector("iframe")?.contentDocument;
+        // the report redraws its table now and then (refresh, new filter): give the new one sorting and names again
+        try{
+            const table = doc && doc.querySelector(DI_TABLE);
+            if(table){
+                convertBtns();
+                if(!table.dataset.contentjsNames){
+                    table.dataset.contentjsNames = "1";
+                    convertFinone(table);
+                }
+            }
+        }catch(error){
+            console.error("report tools failed", error);
+        }
         const host = doc && findFieldEditingButton(doc);
         if(host){
             document.getElementById(DI_DOWNLOAD_ID)?.remove();
@@ -659,17 +667,25 @@ function startDiReportButton(){
             addFloatingDownloadButton();
         }
     };
-    diButtonTimer = setInterval(sync, 500);
-    sync();
+    const safeSync = () => {
+        try{
+            sync();
+        }catch(error){
+            console.error("download button sync failed", error);
+        }
+    };
+    diButtonTimer = setInterval(safeSync, 500);
+    safeSync();
 }
 
 async function handleDiReport(){
     console.log("handling Di report");
     let iframe = await waitForElement("iframe",10000);
     let table = await waitForElementSinglewithiframe(DI_TABLE,10000);
-    startDiReportButton();
-    convertBtns();
-    convertFinone(table);
+    // each step on its own: if one fails the others (sorting, names, button) still work
+    try{ convertBtns(); }catch(error){ console.error("sorting setup failed", error); }
+    try{ await convertFinone(table); }catch(error){ console.error("name conversion failed", error); }
+    try{ startDiReportButton(); }catch(error){ console.error("download button failed", error); }
 }
 async function showData(data){
     const request = await addCommandWall("div.tableDiv-contentJS");
