@@ -9,6 +9,10 @@
 // browser session (chrome.storage.session, gone when the browser closes), never in long-term storage:
 //   "lastSearchedNumber": "9876543210"
 //   "searchPasswords": { "9876543210": { last4, year, password }, ... }
+// Everything read from a customer page is checked against the application id (AID): the first customer page
+// that opens after a search fixes the AID of that number; after that only pages with the same AID are used,
+// so another customer's name / date of birth can never be saved under the wrong number.
+//   "searchBinding": { number: "9876543210", aid: null | "A177513758" }
 // The customer name (shown at the top of the customer pages) is kept in long-term storage, in the same list:
 //   "searchedNumbers": { "9876543210": { ..., name: "NTBCUSTOMER", aid: "A102077124" }, ... }
 // (aid = application id, shown under the name in the header of the customer pages)
@@ -20,7 +24,7 @@
     const PANEL_ID = "contentJS-searchedNumbers";
     const LAST_KEY = "lastSearchedNumber";
     const PASSWORD_KEY = "searchPasswords";
-    const NAME_SAVED_KEY = "nameSavedForLastSearch";
+    const BINDING_KEY = "searchBinding";
     const NAME_ELEMENT = "p.customerName";
     const DOB_INPUT = 'input[data-id="dob"]';
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -67,7 +71,7 @@
         const passwords = (await sessionGet(PASSWORD_KEY)) || {};
         delete passwords[number];
         // the name is read again from the customer page that opens after this search
-        await sessionSet({ [LAST_KEY]: number, [PASSWORD_KEY]: passwords, [NAME_SAVED_KEY]: false });
+        await sessionSet({ [LAST_KEY]: number, [PASSWORD_KEY]: passwords, [BINDING_KEY]: { number, aid: null } });
     }
 
     async function removePassword(number) {
@@ -91,27 +95,27 @@
         return /^A\d{5,}$/.test(aid) ? aid : null;
     }
 
-    async function updateName() {
-        const name = readCustomerName();
-        if (!name) {
-            return;
-        }
+    // The first customer page after a search fixes the AID (and name) of the searched number.
+    // Later pages count only when their AID is the same one.
+    async function updateCustomer() {
         const aid = readAid();
-        const number = await sessionGet(LAST_KEY);
-        if (!number) {
+        if (!aid) {
             return;
         }
-        if (await sessionGet(NAME_SAVED_KEY)) {
-            return;
+        const binding = await sessionGet(BINDING_KEY);
+        if (!binding || (binding.aid && binding.aid !== aid)) {
+            return; // nothing searched yet, or the page of another customer
         }
-        await sessionSet({ [NAME_SAVED_KEY]: true });
+        if (binding.aid) {
+            return; // already fixed for this search
+        }
+        const name = readCustomerName();
+        await sessionSet({ [BINDING_KEY]: { number: binding.number, aid } });
         updateSaved((saved) => {
-            if (saved[number]) {
-                saved[number].name = name;
-                if (aid) {
-                    saved[number].aid = aid;
-                } else {
-                    delete saved[number].aid;
+            if (saved[binding.number]) {
+                saved[binding.number].aid = aid;
+                if (name) {
+                    saved[binding.number].name = name;
                 }
             }
         });
@@ -129,16 +133,18 @@
         if (!year) {
             return;
         }
-        const number = await sessionGet(LAST_KEY);
-        if (!number) {
+        const binding = await sessionGet(BINDING_KEY);
+        // only for the customer whose AID was fixed for the searched number
+        if (!binding || !binding.aid || readAid() !== binding.aid) {
             return;
         }
+        const number = binding.number;
         const passwords = (await sessionGet(PASSWORD_KEY)) || {};
         if (passwords[number]) {
             return;
         }
         const last4 = number.slice(-4);
-        passwords[number] = { last4, year, password: last4 + year };
+        passwords[number] = { last4, year, password: last4 + year, aid: binding.aid };
         await sessionSet({ [PASSWORD_KEY]: passwords });
     }
 
@@ -712,9 +718,18 @@
     const agoTimer = setInterval(() => render(current), 20000);
     window.addEventListener("resize", alignWithHeader);
     // the customer page fills in the date of birth a moment after it opens
-    const dobTimer = setInterval(() => {
-        updatePassword();
-        updateName();
+    let reading = false;
+    const dobTimer = setInterval(async () => {
+        if (reading) {
+            return;
+        }
+        reading = true;
+        try {
+            await updateCustomer(); // first: fixes the AID
+            await updatePassword(); // then: only for that AID
+        } finally {
+            reading = false;
+        }
     }, 1500);
     syncPanel();
 })();
