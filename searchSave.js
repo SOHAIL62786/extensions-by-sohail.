@@ -12,7 +12,9 @@
 // Everything read from a customer page is checked against the application id (AID): the first customer page
 // that opens after a search fixes the AID of that number; after that only pages with the same AID are used,
 // so another customer's name / date of birth can never be saved under the wrong number.
-//   "searchBinding": { number: "9876543210", aid: null | "A177513758" }
+//   "searchBinding": { number: "9876543210", aid: null | "A177513758", tab: "<id of the tab that searched>", at: <time> }
+// The AID is fixed only by a customer page that is open in the tab where the search was made (other tabs that
+// already show some customer are ignored), is on screen, and opens within 2 minutes of the search.
 // The customer name (shown at the top of the customer pages) is kept in long-term storage, in the same list:
 //   "searchedNumbers": { "9876543210": { ..., name: "NTBCUSTOMER", aid: "A102077124" }, ... }
 // (aid = application id, shown under the name in the header of the customer pages)
@@ -25,6 +27,8 @@
     const LAST_KEY = "lastSearchedNumber";
     const PASSWORD_KEY = "searchPasswords";
     const BINDING_KEY = "searchBinding";
+    const TAB_KEY = "contentJS-searchTab"; // in the page's own sessionStorage: belongs to this browser tab only
+    const BIND_WINDOW_MS = 120000; // the customer page must open within 2 minutes of the search
     const NAME_ELEMENT = "p.customerName";
     const DOB_INPUT = 'input[data-id="dob"]';
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -71,7 +75,14 @@
         const passwords = (await sessionGet(PASSWORD_KEY)) || {};
         delete passwords[number];
         // the name is read again from the customer page that opens after this search
-        await sessionSet({ [LAST_KEY]: number, [PASSWORD_KEY]: passwords, [BINDING_KEY]: { number, aid: null } });
+        let tab = null;
+        try {
+            tab = crypto.randomUUID();
+            sessionStorage.setItem(TAB_KEY, tab);
+        } catch (error) {
+            tab = null; // no tab storage: the time window below is then the only check
+        }
+        await sessionSet({ [LAST_KEY]: number, [PASSWORD_KEY]: passwords, [BINDING_KEY]: { number, aid: null, tab, at: Date.now() } });
     }
 
     async function removePassword(number) {
@@ -81,15 +92,24 @@
     }
 
     // customer name shown in the header of the customer pages ("NTBCUSTOMER")
+    // The customer header that is on screen. The site can keep the header of an earlier page in the document
+    // (hidden), so the first match is not always the current customer.
+    function visibleHeader() {
+        return Array.from(document.querySelectorAll(NAME_ELEMENT)).find((element) => {
+            const box = element.getBoundingClientRect();
+            return box.width > 0 && box.height > 0 && getComputedStyle(element).visibility !== "hidden";
+        }) || null;
+    }
+
     function readCustomerName() {
-        const element = document.querySelector(NAME_ELEMENT);
+        const element = visibleHeader();
         const name = element ? element.textContent.replace(/\s+/g, " ").trim() : "";
         return name || null;
     }
 
     // application id ("A177513758") shown under the customer name
     function readAid() {
-        const element = document.querySelector(NAME_ELEMENT);
+        const element = visibleHeader();
         const text = element && element.parentElement ? element.parentElement.querySelector("p.blackText") : null;
         const aid = text ? text.textContent.trim() : "";
         return /^A\d{5,}$/.test(aid) ? aid : null;
@@ -103,14 +123,21 @@
             return;
         }
         const binding = await sessionGet(BINDING_KEY);
-        if (!binding || (binding.aid && binding.aid !== aid)) {
-            return; // nothing searched yet, or the page of another customer
+        if (!binding || binding.aid) {
+            return; // nothing searched yet, or the AID is already fixed for this search
         }
-        if (binding.aid) {
-            return; // already fixed for this search
+        // only the tab that made the search, while it is on screen, shortly after the search
+        let ownTab = null;
+        try {
+            ownTab = sessionStorage.getItem(TAB_KEY);
+        } catch (error) {
+            ownTab = null;
+        }
+        if (document.visibilityState !== "visible" || Date.now() - binding.at > BIND_WINDOW_MS || (binding.tab && binding.tab !== ownTab)) {
+            return;
         }
         const name = readCustomerName();
-        await sessionSet({ [BINDING_KEY]: { number: binding.number, aid } });
+        await sessionSet({ [BINDING_KEY]: { ...binding, aid } });
         updateSaved((saved) => {
             if (saved[binding.number]) {
                 saved[binding.number].aid = aid;
