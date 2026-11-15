@@ -14,3 +14,10 @@ const DEFAULT_MENU_LIST = [
     ...["Do Details", "Other Details", "Agreement", "Invoice", "Document Library", "Document Validate"]
         .map((name) => ({ name, group: "postDo" })),
 ];
+
+// Registered reports: [{ url, type }]. type "report" -> Download Report (table as shown);
+// anything else -> Download Data (scrolls through the report and saves every record).
+const REPORT_TYPES = { report: "Report", data: "Data" };
+const DEFAULT_REPORT_TYPES = [
+    { url: "https://bflconsumer.my.site.com/dealercommunityreinvent/s/report/00OWc000000eW4PMAU/di-report", type: "report" },
+];

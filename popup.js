@@ -210,6 +210,7 @@ function showPage(name) {
     document.getElementById("page-home").hidden = name !== "home";
     document.getElementById("page-search").hidden = name !== "search";
     document.getElementById("page-menu").hidden = name !== "menu";
+    document.getElementById("page-reports").hidden = name !== "reports";
 }
 
 tabs.forEach((tab) => tab.addEventListener("click", () => showPage(tab.dataset.page)));
@@ -503,6 +504,155 @@ function handleMenuKey(event) {
         renderMenu();
     }
 }
+
+// ---------- reports page ----------
+// stored under "reportTypes" as [{ url, type }]
+const REPORT_KEY = "reportTypes";
+const reportRows = document.getElementById("reportRows");
+const reportEmpty = document.getElementById("reportEmpty");
+const reportForm = document.getElementById("reportForm");
+const reportUrlInput = document.getElementById("reportUrlInput");
+const reportTypeInput = document.getElementById("reportTypeInput");
+const reportMessage = document.getElementById("reportMessage");
+let editingReport = null;
+
+function typeSelect(selected) {
+    const select = document.createElement("select");
+    for (const [key, label] of Object.entries(REPORT_TYPES)) {
+        select.add(new Option(label, key, false, key === selected));
+    }
+    return select;
+}
+
+async function readReports() {
+    const result = await chrome.storage.local.get(REPORT_KEY);
+    return Array.isArray(result[REPORT_KEY]) ? result[REPORT_KEY] : DEFAULT_REPORT_TYPES.map((item) => ({ ...item }));
+}
+
+function reportId(url) {
+    const match = /\/report\/([A-Za-z0-9]{15,18})/.exec(url);
+    return match ? match[1] : null;
+}
+
+function checkReportUrl(url, list, skip) {
+    if (!/^https?:\/\//i.test(url) || !reportId(url)) {
+        return "Enter the report page address (it contains /report/<id>)";
+    }
+    if (list.some((item, i) => i !== skip && reportId(item.url) === reportId(url))) {
+        return "This report is already registered";
+    }
+    return null;
+}
+
+async function renderReports() {
+    const list = await readReports();
+    reportRows.replaceChildren();
+    list.forEach((item, index) => {
+        const row = document.createElement("tr");
+        const serial = textCell(index + 1);
+        serial.className = "sno";
+        const actions = document.createElement("td");
+        actions.className = "actions reports";
+        const key = String(index);
+        if (index === editingReport) {
+            row.className = "editing";
+            const typeCell = document.createElement("td");
+            typeCell.append(typeSelect(item.type));
+            row.append(serial, inputCell("edit-report-url", item.url), typeCell);
+            actions.append(iconButton("save", "Save", key), iconButton("cancel", "Cancel", key));
+        } else {
+            const urlCell = textCell(item.url);
+            urlCell.className = "url";
+            row.append(serial, urlCell, textCell(REPORT_TYPES[item.type] ?? item.type));
+            actions.append(iconButton("edit", "Edit", key), iconButton("delete", "Delete", key));
+        }
+        row.append(actions);
+        reportRows.append(row);
+    });
+    reportEmpty.hidden = list.length > 0;
+    reportRows.querySelector("input.edit-report-url")?.focus();
+}
+
+async function addReport(event) {
+    event.preventDefault();
+    const url = reportUrlInput.value.trim();
+    const list = await readReports();
+    const error = checkReportUrl(url, list, -1);
+    if (error) {
+        reportMessage.textContent = error;
+        return;
+    }
+    list.push({ url, type: reportTypeInput.value });
+    await chrome.storage.local.set({ [REPORT_KEY]: list });
+    reportUrlInput.value = "";
+    reportMessage.textContent = "";
+    renderReports();
+}
+
+async function saveReport(index) {
+    const row = reportRows.querySelector("tr.editing");
+    const url = row.querySelector("input.edit-report-url").value.trim();
+    const list = await readReports();
+    const error = checkReportUrl(url, list, index);
+    if (error) {
+        reportMessage.textContent = error;
+        return;
+    }
+    list[index] = { url, type: row.querySelector("select").value };
+    await chrome.storage.local.set({ [REPORT_KEY]: list });
+    editingReport = null;
+    reportMessage.textContent = "";
+    renderReports();
+}
+
+async function deleteReport(index) {
+    const list = await readReports();
+    if (!confirm(`Delete ${list[index].url}?`)) {
+        return;
+    }
+    list.splice(index, 1);
+    await chrome.storage.local.set({ [REPORT_KEY]: list });
+    editingReport = null;
+    reportMessage.textContent = "";
+    renderReports();
+}
+
+reportRows.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-action]");
+    if (!button) {
+        return;
+    }
+    const index = Number(button.dataset.name);
+    if (button.dataset.action === "edit") {
+        editingReport = index;
+        reportMessage.textContent = "";
+        renderReports();
+    } else if (button.dataset.action === "cancel") {
+        editingReport = null;
+        reportMessage.textContent = "";
+        renderReports();
+    } else if (button.dataset.action === "save") {
+        saveReport(index);
+    } else if (button.dataset.action === "delete") {
+        deleteReport(index);
+    }
+});
+reportRows.addEventListener("keydown", (event) => {
+    if (editingReport !== null && event.target.matches("input")) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            saveReport(editingReport);
+        } else if (event.key === "Escape") {
+            editingReport = null;
+            renderReports();
+        }
+    }
+});
+reportForm.addEventListener("submit", addReport);
+for (const [key, label] of Object.entries(REPORT_TYPES)) {
+    reportTypeInput.add(new Option(label, key));
+}
+renderReports();
 
 // ---------- extension & device info ----------
 const ADMIN = "SOHAIL62786";

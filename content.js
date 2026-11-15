@@ -615,18 +615,8 @@ function reportTitle(){
     return name || "Report";
 }
 
-function downloadReport(){
-    if(typeof XLSX === "undefined"){
-        alert("Excel library is not loaded. Reload the page and try again.");
-        return;
-    }
-    const found = findReportTable();
-    const table = found && found.table;
-    if(!table){
-        alert("The report table is not on the page yet.");
-        return;
-    }
-    const rows = readReportRows(table);
+// writes rows ([{v,z}] per cell, first row = header) to an Excel file named after the report
+function saveRowsAsExcel(rows){
     const sheet = XLSX.utils.aoa_to_sheet(rows.map(row => row.map(cell => cell.v)));
     rows.forEach((row, r) => row.forEach((cell, c) => {
         if(cell.z){
@@ -642,6 +632,149 @@ function downloadReport(){
     const now = new Date();
     const today = [now.getDate(), now.getMonth() + 1, now.getFullYear()].map((part, i) => String(part).padStart(i < 2 ? 2 : 4, "0")).join("-");
     XLSX.writeFile(workbook, `${title} ${today}.xlsx`);
+}
+
+function downloadReport(){
+    if(typeof XLSX === "undefined"){
+        alert("Excel library is not loaded. Reload the page and try again.");
+        return;
+    }
+    const found = findReportTable();
+    const table = found && found.table;
+    if(!table){
+        alert("The report table is not on the page yet.");
+        return;
+    }
+    saveRowsAsExcel(readReportRows(table));
+}
+
+// ---------- reports: Download Data (every record, also the ones below the visible part) ----------
+// The report only draws the rows that are on screen, so the page is scrolled down step by step,
+// the rows seen at each step are joined (the steps overlap), and everything is saved at the end.
+const rowKey = (row) => JSON.stringify(row.map(cell => cell.v));
+
+function findScroller(table){
+    const view = table.ownerDocument.defaultView;
+    for(let el = table.parentElement; el; el = el.parentElement){
+        const overflow = view.getComputedStyle(el).overflowY;
+        if(/(auto|scroll|overlay)/.test(overflow) && el.scrollHeight > el.clientHeight + 2){
+            return el;
+        }
+    }
+    const root = table.ownerDocument.scrollingElement;
+    return root && root.scrollHeight > root.clientHeight + 2 ? root : null;
+}
+
+// appends the rows of a new window to the rows collected so far, skipping the part both have
+function mergeRows(all, windowRows){
+    const keys = all.map(rowKey);
+    const next = windowRows.map(rowKey);
+    for(let overlap = Math.min(keys.length, next.length); overlap > 0; overlap--){
+        let same = true;
+        for(let i = 0; i < overlap; i++){
+            if(keys[keys.length - overlap + i] !== next[i]){
+                same = false;
+                break;
+            }
+        }
+        if(same){
+            all.push(...windowRows.slice(overlap));
+            return;
+        }
+    }
+    all.push(...windowRows);
+}
+
+async function collectAllRows(onProgress){
+    const found = await waitForReportTable(5000);
+    if(!found){
+        return null;
+    }
+    const table = found.table;
+    const scroller = findScroller(table);
+    const startTop = scroller ? scroller.scrollTop : 0;
+    if(scroller){
+        scroller.scrollTop = 0;
+    }
+    await sleep(600);
+    let header = null;
+    const body = [];
+    let unchanged = 0;
+    for(let step = 0; step < 600; step++){
+        const current = (findReportTable() || found).table;
+        const rows = readReportRows(current);
+        header = header || rows[0];
+        const before = body.length;
+        mergeRows(body, rows.slice(1));
+        onProgress(body.length);
+        const atBottom = !scroller || scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2;
+        unchanged = body.length === before && step > 0 ? unchanged + 1 : 0;
+        if((atBottom && unchanged >= 2) || unchanged >= 5){
+            break;
+        }
+        if(scroller){
+            scroller.scrollTop += Math.max(60, scroller.clientHeight * 0.6);
+        }else{
+            const last = current.querySelector("tbody tr:last-child");
+            last && last.scrollIntoView({ block: "end" });
+        }
+        await sleep(450);
+    }
+    if(scroller){
+        scroller.scrollTop = startTop;
+    }
+    return { header, body };
+}
+
+let dataDownloading = false;
+async function downloadData(setLabel){
+    if(typeof XLSX === "undefined"){
+        alert("Excel library is not loaded. Reload the page and try again.");
+        return;
+    }
+    if(dataDownloading){
+        return;
+    }
+    dataDownloading = true;
+    try{
+        const result = await collectAllRows(count => setLabel(`Reading ${count} records…`));
+        if(!result || !result.header){
+            alert("The report table is not on the page yet.");
+            return;
+        }
+        const names = await getFinOneNames();
+        const rows = [result.header, ...result.body.map(row => {
+            const name = names[String(row[0].v).trim()];
+            return name ? [{ v: name, t: "s" }, ...row.slice(1)] : row;
+        })];
+        saveRowsAsExcel(rows);
+        setLabel(`Downloaded ${result.body.length} records`);
+        await sleep(2500);
+    }catch(error){
+        console.error("download data failed", error);
+        alert("Could not read all the records: " + error.message);
+    }finally{
+        dataDownloading = false;
+        setLabel(null);
+    }
+}
+
+// which of the two downloads a report uses: registered as "report" in the popup -> Download Report, otherwise Download Data
+let reportMode = "data";
+function reportIdOf(url){
+    const match = /\/report\/([A-Za-z0-9]{15,18})/.exec(url);
+    return match ? match[1] : null;
+}
+async function loadReportMode(){
+    const saved = (await chrome.storage.local.get("reportTypes")).reportTypes;
+    const list = Array.isArray(saved) ? saved : DEFAULT_REPORT_TYPES;
+    const id = reportIdOf(location.href);
+    const entry = id && list.find(item => reportIdOf(item.url) === id);
+    reportMode = entry && entry.type === "report" ? "report" : "data";
+}
+const MODE_LABEL = () => reportMode === "report" ? "Download Report" : "Download Data";
+function runDownload(setLabel){
+    return reportMode === "report" ? downloadReport() : downloadData(setLabel);
 }
 
 // ---- the Download Excel button: a copy of the page's own "Enable Field Editing" button, placed next to it ----
@@ -666,12 +799,14 @@ function makeDownloadButton(host){
     copy.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
     const button = copy.matches("button, a") ? copy : copy.querySelector("button, a");
     ["title", "aria-label", "aria-pressed", "disabled", "href", "name", "value"].forEach(name => button.removeAttribute(name));
-    button.setAttribute("title", "Download this table as an Excel file");
+    button.setAttribute("title", reportMode === "report" ? "Download this table as an Excel file" : "Read every record of this report and save it as an Excel file");
+    copy.setAttribute("data-contentjs-mode", reportMode);
     // label
     const walker = copy.ownerDocument.createTreeWalker(copy, NodeFilter.SHOW_TEXT);
     for(let node = walker.nextNode(); node; node = walker.nextNode()){
         if(/field editing/i.test(node.nodeValue)){
-            node.nodeValue = "Download Excel";
+            node.nodeValue = MODE_LABEL();
+            copy.contentjsLabel = node;
             break;
         }
     }
@@ -684,7 +819,11 @@ function makeDownloadButton(host){
     button.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        downloadReport();
+        runDownload(text => {
+            if(copy.contentjsLabel){
+                copy.contentjsLabel.nodeValue = text === null ? MODE_LABEL() : text;
+            }
+        });
     });
     return { unit, copy };
 }
@@ -697,13 +836,15 @@ function addFloatingDownloadButton(){
     const button = document.createElement("button");
     button.id = REPORT_DOWNLOAD_ID;
     button.type = "button";
-    button.textContent = "Download Excel";
+    button.textContent = MODE_LABEL();
     Object.assign(button.style, {
         position: "fixed", top: "90px", right: "24px", zIndex: "10000",
         padding: "8px 16px", border: "1px solid #0176d3", borderRadius: "4px", cursor: "pointer",
         background: "#fff", color: "#0176d3", font: "400 13px sans-serif"
     });
-    button.addEventListener("click", downloadReport);
+    button.addEventListener("click", () => runDownload(text => {
+        button.textContent = text === null ? MODE_LABEL() : text;
+    }));
     document.body.append(button);
 }
 
@@ -731,6 +872,10 @@ function startReportButton(){
         }
         const found = findReportTable();
         const doc = found && found.doc;
+        const floating = document.getElementById(REPORT_DOWNLOAD_ID);
+        if(floating && !dataDownloading){
+            floating.textContent = MODE_LABEL();
+        }
         // the report redraws its table now and then (refresh, new filter): give the new one sorting and names again
         try{
             const table = found && found.table;
@@ -748,6 +893,10 @@ function startReportButton(){
         if(host){
             document.getElementById(REPORT_DOWNLOAD_ID)?.remove();
             // the report redraws its header now and then: put the button back whenever it is gone
+            const existing = doc.querySelector(`[${REPORT_COPY_ATTR}]`);
+            if(existing && existing.getAttribute("data-contentjs-mode") !== reportMode && !dataDownloading){
+                existing.remove();
+            }
             if(!doc.querySelector(`[${REPORT_COPY_ATTR}]`)){
                 const { unit, copy } = makeDownloadButton(host);
                 unit.after(copy);
@@ -775,6 +924,7 @@ async function handleReport(){
     }
     reportRunning = true;
     try{
+        await loadReportMode();
         let found = await waitForReportTable(10000);
         if(!found){
             console.warn("[contentJS] report table not found yet. Page details:", JSON.stringify(describeReportFrames()));
@@ -1057,6 +1207,9 @@ async function createMenuList(page){
 }
 // the Menu List table was changed in the popup: rebuild the menus on the open page
 chrome.storage.onChanged.addListener((changes, area) => {
+    if(area === "local" && changes.reportTypes && chrome.runtime.id){
+        loadReportMode();
+    }
     if(area === "local" && changes.menuList && chrome.runtime.id){
         document.querySelectorAll("div.contentJS-listBoundary").forEach(el => el.remove());
         lastUrl = undefined;

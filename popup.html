@@ -10,6 +10,7 @@
     <button type="button" class="tab active" data-page="home">Home</button>
     <button type="button" class="tab" data-page="search">Search Data</button>
     <button type="button" class="tab" data-page="menu">Menu List</button>
+    <button type="button" class="tab" data-page="reports">Reports</button>
   </nav>
 
   <div id="page-home" class="page">
@@ -98,6 +99,33 @@
       <button type="submit" class="primary">Add</button>
     </form>
     <p id="menuMessage" class="message" role="alert"></p>
+  </main>
+  </div>
+
+  <div id="page-reports" class="page" hidden>
+  <main class="column wide">
+    <h1>Reports</h1>
+    <section class="card">
+      <table>
+        <thead>
+          <tr>
+            <th class="sno">S.No</th>
+            <th>Report URL</th>
+            <th class="group">Report type</th>
+            <th class="actions reports"></th>
+          </tr>
+        </thead>
+        <tbody id="reportRows"></tbody>
+      </table>
+      <p id="reportEmpty" hidden>No reports registered. Every report uses Download Data.</p>
+    </section>
+    <form id="reportForm" autocomplete="off">
+      <input id="reportUrlInput" type="text" placeholder="Report URL" aria-label="Report URL">
+      <select id="reportTypeInput" aria-label="Report type"></select>
+      <button type="submit" class="primary">Add</button>
+    </form>
+    <p id="reportHint" class="hint">Report = Download Report (table as shown). Data or unregistered = Download Data (all records).</p>
+    <p id="reportMessage" class="message" role="alert"></p>
   </main>
   </div>
 

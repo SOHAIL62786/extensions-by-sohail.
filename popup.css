@@ -334,3 +334,33 @@ button.link {
 #menuForm.inserting #menuGroupInput {
     opacity: 0.6;
 }
+
+/* ---------- reports page ---------- */
+#reportForm {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+}
+#reportUrlInput {
+    flex: 1;
+}
+#reportTypeInput {
+    width: 190px;
+}
+.actions.reports {
+    width: 80px;
+}
+#reportMessage {
+    min-height: 16px;
+    margin-top: 6px;
+    color: var(--danger);
+    font-size: 11px;
+}
+#reportHint {
+    margin-top: 8px;
+    color: var(--accent);
+    font-size: 11px;
+}
+td.url {
+    word-break: break-all;
+}
