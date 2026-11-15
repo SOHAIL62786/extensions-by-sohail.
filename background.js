@@ -182,13 +182,14 @@ const urlCheck = () => {
       return;
     }
     const url = tabs[0].url;
-    if (url.startsWith("https://bflconsumer.my.site.com/dealercommunityreinvent")) {
+    const site = "https://bflconsumer.my.site.com/";
+    const reinvent = url.startsWith(site + "dealercommunityreinvent");
+    if (reinvent) {
       messageToContent({ action: "checkReinventAutomationPagesList" });
-      if(url.includes("di-report")){
-        messageToContent({ action: "di-report" });
-      }else if(url.includes("report")){
-        messageToContent({ action: "handleReports" });
-      }
+    }
+    // every report page (sorting, names and the Download Excel button)
+    if ((reinvent || url.startsWith(site + "dealerRevamp")) && url.includes("/s/report/")) {
+      messageToContent({ action: "handleReports" });
     }
   });
 };

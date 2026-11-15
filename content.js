@@ -378,7 +378,7 @@ function reportDocuments(doc = document, depth = 0){
 
 // The report table. If the page's own table class is not there (the report was redrawn with other class
 // names), the biggest table inside a frame is used instead.
-function findReportTable(selector = DI_TABLE){
+function findReportTable(selector = REPORT_TABLE){
     const docs = reportDocuments();
     for(const doc of docs){
         const table = doc.querySelector(selector);
@@ -386,7 +386,7 @@ function findReportTable(selector = DI_TABLE){
             return { doc, table };
         }
     }
-    if(selector !== DI_TABLE){
+    if(selector !== REPORT_TABLE){
         return null;
     }
     let best = null;
@@ -532,9 +532,9 @@ async function convertFinone(table){
         }
     }
 }
-// ---------- DI report: download the table as an Excel file ----------
-const DI_TABLE = "table.data-grid-full-table.data-grid-table";
-const DI_DOWNLOAD_ID = "contentJS-diDownload";
+// ---------- reports: download the table as an Excel file ----------
+const REPORT_TABLE = "table.data-grid-full-table.data-grid-table";
+const REPORT_DOWNLOAD_ID = "contentJS-reportDownload";
 
 // Text a person can actually see in an element: the report adds hidden helper text for screen readers
 // ("unchecked, Select row for Drill Down", "Column Actions", "Formula ... FORMULA1") that must not be exported.
@@ -590,7 +590,7 @@ function toCellValue(text){
 
 // Same rows and columns as the table on screen: the DME ID column shows the name (or the code when
 // there is no name for it), the checkbox helper text is left out.
-function readDiReportRows(table){
+function readReportRows(table){
     return Array.from(table.querySelectorAll("tr")).map((tr, rowIndex) => {
         return Array.from(tr.children).map((cell, columnIndex) => {
             const isHeader = cell.classList.contains("data-grid-header-cell") || rowIndex === 0;
@@ -609,7 +609,13 @@ function readDiReportRows(table){
     }).filter(row => row.some(cell => cell.v !== ""));
 }
 
-function downloadDiReport(){
+// name of the open report, from the page title ("Report: Di Report" -> "Di Report"), safe for a file name
+function reportTitle(){
+    const name = document.title.replace(/^Report\s*[:_-]\s*/i, "").replace(/[\\/:*?"<>|\[\]]/g, " ").replace(/\s+/g, " ").trim();
+    return name || "Report";
+}
+
+function downloadReport(){
     if(typeof XLSX === "undefined"){
         alert("Excel library is not loaded. Reload the page and try again.");
         return;
@@ -620,7 +626,7 @@ function downloadDiReport(){
         alert("The report table is not on the page yet.");
         return;
     }
-    const rows = readDiReportRows(table);
+    const rows = readReportRows(table);
     const sheet = XLSX.utils.aoa_to_sheet(rows.map(row => row.map(cell => cell.v)));
     rows.forEach((row, r) => row.forEach((cell, c) => {
         if(cell.z){
@@ -631,19 +637,20 @@ function downloadDiReport(){
         wch: Math.min(40, Math.max(...rows.map(row => String(row[column] ? row[column].v : "").length)) + 3)
     }));
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, sheet, "DI Report");
+    const title = reportTitle();
+    XLSX.utils.book_append_sheet(workbook, sheet, title.slice(0, 31));
     const now = new Date();
     const today = [now.getDate(), now.getMonth() + 1, now.getFullYear()].map((part, i) => String(part).padStart(i < 2 ? 2 : 4, "0")).join("-");
-    XLSX.writeFile(workbook, `DI Report ${today}.xlsx`);
+    XLSX.writeFile(workbook, `${title} ${today}.xlsx`);
 }
 
 // ---- the Download Excel button: a copy of the page's own "Enable Field Editing" button, placed next to it ----
-const DI_COPY_ATTR = "data-contentjs-download";
+const REPORT_COPY_ATTR = "data-contentjs-download";
 const DOWNLOAD_ICON = '<path d="M26 38 12 24h9V6h10v18h9L26 38ZM8 42h36v6H8v-6Z"></path>';
 
 function findFieldEditingButton(doc){
     const matches = Array.from(doc.querySelectorAll("button, a"))
-        .filter(el => /field editing/i.test(el.textContent) && !el.closest(`[${DI_COPY_ATTR}]`));
+        .filter(el => /field editing/i.test(el.textContent) && !el.closest(`[${REPORT_COPY_ATTR}]`));
     return matches.find(el => !matches.some(other => other !== el && el.contains(other)));
 }
 
@@ -654,7 +661,7 @@ function makeDownloadButton(host){
         unit = unit.parentElement;
     }
     const copy = unit.cloneNode(true);
-    copy.setAttribute(DI_COPY_ATTR, "1");
+    copy.setAttribute(REPORT_COPY_ATTR, "1");
     copy.removeAttribute("id");
     copy.querySelectorAll("[id]").forEach(el => el.removeAttribute("id"));
     const button = copy.matches("button, a") ? copy : copy.querySelector("button, a");
@@ -677,18 +684,18 @@ function makeDownloadButton(host){
     button.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        downloadDiReport();
+        downloadReport();
     });
     return { unit, copy };
 }
 
 // fallback when the page's own button can not be found: a floating button
 function addFloatingDownloadButton(){
-    if(document.getElementById(DI_DOWNLOAD_ID)){
+    if(document.getElementById(REPORT_DOWNLOAD_ID)){
         return;
     }
     const button = document.createElement("button");
-    button.id = DI_DOWNLOAD_ID;
+    button.id = REPORT_DOWNLOAD_ID;
     button.type = "button";
     button.textContent = "Download Excel";
     Object.assign(button.style, {
@@ -696,12 +703,12 @@ function addFloatingDownloadButton(){
         padding: "8px 16px", border: "1px solid #0176d3", borderRadius: "4px", cursor: "pointer",
         background: "#fff", color: "#0176d3", font: "400 13px sans-serif"
     });
-    button.addEventListener("click", downloadDiReport);
+    button.addEventListener("click", downloadReport);
     document.body.append(button);
 }
 
 let diButtonTimer = null;
-function startDiReportButton(){
+function startReportButton(){
     if(diButtonTimer){
         return;
     }
@@ -709,16 +716,16 @@ function startDiReportButton(){
     const removeButtons = () => {
         clearInterval(diButtonTimer);
         diButtonTimer = null;
-        document.getElementById(DI_DOWNLOAD_ID)?.remove();
+        document.getElementById(REPORT_DOWNLOAD_ID)?.remove();
         try {
-            findReportTable(`[${DI_COPY_ATTR}]`)?.table.remove();
+            findReportTable(`[${REPORT_COPY_ATTR}]`)?.table.remove();
         } catch (error) {
             // frame not readable any more
         }
     };
     const sync = () => {
         // the site is a single-page app: the button must go as soon as another page is opened without a reload
-        if(!chrome.runtime.id || !location.href.includes("di-report")){
+        if(!chrome.runtime.id || !location.pathname.includes("/s/report/")){
             removeButtons();
             return;
         }
@@ -739,9 +746,9 @@ function startDiReportButton(){
         }
         const host = doc && findFieldEditingButton(doc);
         if(host){
-            document.getElementById(DI_DOWNLOAD_ID)?.remove();
+            document.getElementById(REPORT_DOWNLOAD_ID)?.remove();
             // the report redraws its header now and then: put the button back whenever it is gone
-            if(!doc.querySelector(`[${DI_COPY_ATTR}]`)){
+            if(!doc.querySelector(`[${REPORT_COPY_ATTR}]`)){
                 const { unit, copy } = makeDownloadButton(host);
                 unit.after(copy);
             }
@@ -760,29 +767,29 @@ function startDiReportButton(){
     safeSync();
 }
 
-let diReportRunning = false;
-async function handleDiReport(){
+let reportRunning = false;
+async function handleReport(){
     // the page reports the same address several times: one run at a time is enough
-    if(diReportRunning){
+    if(reportRunning){
         return;
     }
-    diReportRunning = true;
+    reportRunning = true;
     try{
         let found = await waitForReportTable(10000);
         if(!found){
-            console.warn("[contentJS] DI report table not found yet. Page details:", JSON.stringify(describeReportFrames()));
+            console.warn("[contentJS] report table not found yet. Page details:", JSON.stringify(describeReportFrames()));
             found = await waitForReportTable(20000);
         }
         if(!found){
-            console.error("[contentJS] DI report table not found");
+            console.error("[contentJS] report table not found");
             return;
         }
         // each step on its own: if one fails the others (sorting, names, button) still work
         try{ convertBtns(); }catch(error){ console.error("sorting setup failed", error); }
         try{ await convertFinone(found.table); }catch(error){ console.error("name conversion failed", error); }
-        try{ startDiReportButton(); }catch(error){ console.error("download button failed", error); }
+        try{ startReportButton(); }catch(error){ console.error("download button failed", error); }
     }finally{
-        diReportRunning = false;
+        reportRunning = false;
     }
 }
 async function showData(data){
@@ -1116,10 +1123,8 @@ chrome.runtime.onMessage.addListener(async (request,sender, sendResponse) => {
     }else if(request.action === "showAlert"){
         const response = alert(request.text);
         messageToBackground("extensionReload2");
-    }else if(request.action === "di-report"){
-        handleDiReport();
     }else if(request.action === "handleReports"){
-        convertBtns();
+        handleReport();
     }
     else if(request.action === "checkReinventAutomationPagesList"){
         modifyReinventList();
