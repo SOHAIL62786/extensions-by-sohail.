@@ -282,6 +282,11 @@
         .delete:hover { background: #fde8e8; color: #c62828; }
         .delete svg { width: 12px; height: 12px; }
         .empty { padding: 10px 12px; color: #666; }
+        li.more { justify-content: center; }
+        .more button {
+            border: none; background: none; color: #085C97; font: inherit; font-weight: 600;
+            text-decoration: underline; cursor: pointer;
+        }
     `;
     const CROSS_ICON = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>';
 
@@ -289,6 +294,9 @@
     let list = null;
     let title = null;
     let current = {};
+    // only the newest 20 rows are drawn (faster); "Show more" adds 20. The details card and the suggestion still use every saved number
+    const PAGE_SIZE = 20;
+    let shown = PAGE_SIZE;
     let detailsHost = null;
     let detailsTitle = null;
     let detailsCard = null;
@@ -432,7 +440,7 @@
             list.append(empty);
             return;
         }
-        for (const [number, entry] of entries) {
+        for (const [number, entry] of entries.slice(0, shown)) {
             const item = document.createElement("li");
 
             const numberButton = document.createElement("button");
@@ -485,6 +493,19 @@
             item.append(deleteButton);
 
             list.append(item);
+        }
+        if (entries.length > shown) {
+            const more = document.createElement("li");
+            more.className = "more";
+            const button = document.createElement("button");
+            button.type = "button";
+            button.textContent = `Show more (${Math.min(PAGE_SIZE, entries.length - shown)} of ${entries.length - shown} remaining)`;
+            button.addEventListener("click", () => {
+                shown += PAGE_SIZE;
+                render(current);
+            });
+            more.append(button);
+            list.append(more);
         }
     }
 
