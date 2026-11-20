@@ -21,12 +21,6 @@
             },
             "description": "SQC"
         },
-        "getCommand": {
-            "suggested_key": {
-                "default": "Alt+C"  
-            },
-            "description": "getCommand"
-        },
         "fetchData": {
             "suggested_key": {
                 "default": "Alt+R"

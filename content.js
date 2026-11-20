@@ -10,23 +10,6 @@ function updateFullScreenClass(){
 updateFullScreenClass();
 window.addEventListener("resize", updateFullScreenClass);
 
-const preVbar = document.querySelector("div.ContentJS-verticalMenuBar");
-if(!preVbar){
-    const verticalMenuBar = document.createElement("div");
-    verticalMenuBar.classList.add("ContentJS-verticalMenuBar");
-    document.body.append(verticalMenuBar);
-    verticalMenuBar.addEventListener("mouseover",(event) => {
-        console.log("hover on vwall",event);
-        const wall = document.querySelector("div#content-commandWall");
-        if(wall){
-            wall.remove();
-        }else{
-            getCommand();
-        }
-    })
-
-}
-
 let permissions = null
 function getPermissions(){
     return new Promise(async (resolve,reject) => {
@@ -293,69 +276,6 @@ async function summarizeReport(){
     
 }
 
-async function getCommand(){
-    const oldCommandWall = document.querySelector("div#content-commandWall");
-    if(oldCommandWall){
-        oldCommandWall.remove()
-    }else{
-        const request = await addCommandWall("div#content-commandWall");
-        if(request.result === "success"){
-            const div = document.querySelector("div#content-commandWall");
-            const input = document.querySelector("input#content-commandInput");
-            ["click","mouseover"].forEach(event => {
-                div.addEventListener(event,() => {
-                    input.focus();
-                })
-            })
-
-            const buttons = document.querySelectorAll("button.contentJS-buttons");
-            buttons.forEach(button => {
-                button.addEventListener("click",()=> {
-                    input.value = button.id
-                    input.dispatchEvent(new Event("input",{bubbles:true}))
-                })
-            })
-
-            input.focus()
-            input.addEventListener("input",async () => {
-                if(input.value.length >= 2){
-                    switch(input.value.toUpperCase()){
-                        case "00": case "CC":
-                            div.remove();
-                            break;
-                        case "16": case "RD":
-                            div.remove();
-                            messageToBackground("info","page_reloaded");
-                            break;
-                        case "79": case "SD":
-                            div.remove();
-                            getschemedata();
-                            break;
-                        case "84": case "SR":
-                            div.remove();
-                            summarizeReport();
-                            break;
-                        case "96": case "RL":
-                            div.remove();
-                            location.reload();
-                            break;
-                        case "97": case "DB":
-                            div.remove();
-                            messageToBackground("download","database");
-                            break
-                        case "98": case "ER":
-                            div.remove();
-                            sleep(2000);
-                            messageToBackground("command","");
-                            div.remove();
-                            break;
-                    }
-                }
-            })
-        }
-        
-    }
-}
 // Every document that can hold the report: the page and its readable frames (the page also has other frames,
 // such as the chat widget, so not just the first one is checked).
 function reportDocuments(doc = document, depth = 0){
@@ -1245,10 +1165,6 @@ chrome.runtime.onMessage.addListener(async (request,sender, sendResponse) => {
     if(request.action === "SQC"){
         checkMessenger("Command request | Submit For QC",10,200);
         submitFile();
-        sendResponse({ status: 'Function invoked successfully' });
-    }else if(request.action === "getCommand"){
-        checkMessenger("Command request | getCommand",9,3000)
-        getCommand();
         sendResponse({ status: 'Function invoked successfully' });
     }else if(request.action === "getConfirmationForSameAid"){
         const response = prompt(`You searched this customer on ${request.date}. Is this a new login ? ; Note: press cancel if you are continuing with old Bid`,"Yes");

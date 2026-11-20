@@ -57,79 +57,6 @@ button.addMessages{
     justify-content: center;
 
 }
-/* control panel */
-#content-commandWall{
-    position: fixed;
-    width: 99%;
-    height: 99%;
-    background-color: lightgrey;
-    opacity: 90%;
-    z-index: 100;
-    top: 50%;
-    bottom: 50%;
-    left: 50%;
-    right: 50%;
-    /* width: 10rem; */
-    transform: translate(-50%, -50%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10vh;
-}
-
-#content-commandInput{
-    width: 40px;
-    height: 50px;
-    background-color: whitesmoke;
-    padding: 5px;
-    border: none;
-    outline: none;
-    border-radius: 3px;
-    color: black;
-    display: flex;
-    align-items: center;
-    text-align: center;
-    justify-content: center;
-    font-size: 1rem
-}
-div.contentJS-buttonsDiv{
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-button.contentJS-buttons{
-    border: none;
-    border-radius: 10px;
-    height: 35px;
-    width: 300px;
-    box-shadow: 3px 3px 5px #c5c5c5, -3px -3px 5px #ffffff;
-    cursor: pointer;
-    font-size: 1.1rem;
-    font-family: 'Courier New', Courier, monospace;
-    font-weight: 540;
-    text-align: left;
-    padding-left: 20px;
-    display: flex;
-    align-items: center;
-    position: relative;
-}
-button.contentJS-buttons span.contentJS-buttons-number{
-    position: absolute;
-    right: 4px;
-    font-size: small;
-    top: 7px;
-    background-color: blueviolet;
-    color: ghostwhite;
-    padding: 2px;
-    border-radius: 2px 5px 5px 2px;
-    text-align: center;
-    align-items: center;
-    font-weight: 900;
-}
-button.contentJS-buttons:hover{
-    scale: 1.1;
-}
-/* end */
 #contentjs-phoneNumber-Counter{
     font-size: medium;
     padding: 1px 5px;
@@ -192,23 +119,7 @@ input.mobile-input{
     justify-content: center;
     align-items: center; */
 }
-.ContentJS-verticalMenuBar{
-    position: fixed;
-    left: 0px;
-    height: 25%;
-    width: 10px;
-    top: 28%;
-    background-color: blue;
-    border-radius: 50px;
-    cursor: pointer;
-    z-index: 1000;
-}
-.ContentJS-verticalMenuBar:hover{
-    top: 20%;
-    height: 30%;
-}
 /* side panels show only at the full-screen aspect ratio (class set by content.js) */
-html.contentJS-notFullScreen .ContentJS-verticalMenuBar,
 html.contentJS-notFullScreen div.contentJS-listBoundary{
     display: none !important;
 }

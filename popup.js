@@ -239,11 +239,17 @@ function timeAgo(iso) {
 
 let searchPasswords = {};
 
+// only the newest 20 rows are drawn (keeps the popup fast); "Show more" adds 20 at a time
+const SEARCH_PAGE = 20;
+let searchLimit = SEARCH_PAGE;
+let searchedCache = {};
+
 function renderSearched(saved) {
-    const entries = Object.entries(saved ?? {})
+    searchedCache = saved ?? {};
+    const entries = Object.entries(searchedCache)
         .sort((x, y) => String(y[1].lastSearchedAt).localeCompare(String(x[1].lastSearchedAt)));
     searchRows.replaceChildren();
-    entries.forEach(([number, entry], index) => {
+    entries.slice(0, searchLimit).forEach(([number, entry], index) => {
         const row = document.createElement("tr");
         const serial = textCell(index + 1);
         serial.className = "sno";
@@ -260,6 +266,9 @@ function renderSearched(saved) {
         searchRows.append(row);
     });
     searchEmpty.hidden = entries.length > 0;
+    const hidden = entries.length - searchLimit;
+    document.getElementById("searchMore").hidden = hidden <= 0;
+    document.getElementById("searchMoreButton").textContent = `Show more (${Math.min(SEARCH_PAGE, hidden)} of ${hidden} remaining)`;
 }
 
 async function loadSearched() {
@@ -731,6 +740,10 @@ form.addEventListener("submit", addEntry);
 rows.addEventListener("click", handleRowClick);
 rows.addEventListener("keydown", handleRowKey);
 searchRows.addEventListener("click", deleteSearched);
+document.getElementById("searchMoreButton").addEventListener("click", () => {
+    searchLimit += SEARCH_PAGE;
+    renderSearched(searchedCache);
+});
 menuForm.addEventListener("submit", addMenuItem);
 document.getElementById("menuHintCancel").addEventListener("click", () => {
     setInsertAfter(null);

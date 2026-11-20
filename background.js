@@ -309,9 +309,6 @@ chrome.commands.onCommand.addListener((command) => {
   if (command === "SQC") {
     console.log("command passes : ", command);
     messageToContent({ action: "SQC" });
-  } else if (command === "getCommand") {
-    console.log("command passes : ", command);
-    messageToContent({ action: "getCommand" });
   } else if (command === "fetchData") {
     console.log("command passes : ", command);
     clusterSubmit();
